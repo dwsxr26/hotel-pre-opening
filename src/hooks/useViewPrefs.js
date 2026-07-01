@@ -1,0 +1,46 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { loadViewPrefs, saveViewPrefs } from '../data/viewPrefs'
+
+// Loads this user's saved view state once, then debounces writes back to
+// Supabase whenever it changes. `enabled` gates loading until we have a session.
+export function useViewPrefs(enabled, defaults) {
+  const [prefs, setPrefs] = useState(defaults)
+  const [ready, setReady] = useState(false)
+  const saveTimer = useRef(null)
+
+  useEffect(() => {
+    if (!enabled) return
+    let cancelled = false
+    loadViewPrefs()
+      .then((saved) => {
+        if (cancelled) return
+        if (saved) setPrefs((prev) => ({ ...prev, ...saved }))
+      })
+      .catch((err) => console.error('Failed to load view prefs', err))
+      .finally(() => !cancelled && setReady(true))
+    return () => {
+      cancelled = true
+    }
+  }, [enabled])
+
+  // Merge a partial update and schedule a debounced save.
+  const update = useCallback(
+    (patch) => {
+      setPrefs((prev) => {
+        const next = { ...prev, ...(typeof patch === 'function' ? patch(prev) : patch) }
+        if (ready) {
+          clearTimeout(saveTimer.current)
+          saveTimer.current = setTimeout(() => {
+            saveViewPrefs(next).catch((err) => console.error('Failed to save view prefs', err))
+          }, 500)
+        }
+        return next
+      })
+    },
+    [ready],
+  )
+
+  useEffect(() => () => clearTimeout(saveTimer.current), [])
+
+  return { prefs, update, ready }
+}

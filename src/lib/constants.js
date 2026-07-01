@@ -1,0 +1,22 @@
+// Shared domain constants.
+
+export const STATUSES = ['Not ordered', 'Order placed', 'Order arrived', 'Returned']
+
+export const STATUS_CLASS = {
+  'Not ordered': 'st-not',
+  'Order placed': 'st-placed',
+  'Order arrived': 'st-arrived',
+  Returned: 'st-returned',
+}
+
+// Column ids that require a confirmation dialog before an edit is committed.
+export const CONFIRM_EDIT_COLUMNS = new Set(['package', 'item', 'category', 'unit_price'])
+
+// The two leftmost columns stay pinned when scrolling horizontally.
+export const PINNED_COLUMNS = ['package', 'item']
+
+// Default left-to-right column order (used on first load and "Reset columns").
+export const DEFAULT_COLUMN_ORDER = [
+  'package', 'item', 'category', 'department', 'owner', 'status',
+  'qty', 'unit_price', 'total', 'supplier', 'order_no', 'est_arrival', 'ref',
+]

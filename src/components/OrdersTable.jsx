@@ -1,0 +1,437 @@
+import { useMemo, useState } from 'react'
+import {
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table'
+import { ArrowDown, ArrowUp, ChevronsUpDown, GripVertical } from 'lucide-react'
+import { DEFAULT_COLUMN_ORDER, PINNED_COLUMNS } from '../lib/constants'
+import { formatMoney, lineTotal } from '../lib/format'
+import FilterPopover from './FilterPopover'
+import ConfirmModal from './ConfirmModal'
+import ConfirmEditCell from './cells/ConfirmEditCell'
+import CategoryCell from './cells/CategoryCell'
+import InlineTextCell from './cells/InlineTextCell'
+import QtyCell from './cells/QtyCell'
+import StatusCell from './cells/StatusCell'
+import DeptCell from './cells/DeptCell'
+import DateCell from './cells/DateCell'
+
+// Filter shape: undefined | {type:'text',text} | {type:'set',values:[]}
+function columnFilterFn(row, columnId, fv) {
+  if (!fv) return true
+  const raw = row.getValue(columnId)
+  const s = raw == null ? '' : String(raw)
+  if (fv.type === 'text') return s.toLowerCase().includes((fv.text || '').toLowerCase())
+  if (fv.type === 'set') return fv.values.includes(s)
+  return true
+}
+
+function globalFilterFn(row, _columnId, query) {
+  const q = (query || '').toLowerCase()
+  if (!q) return true
+  const r = row.original
+  return [r.item, r.supplier, r.order_no, r.ref, r.category, r.package, r.department, r.owner]
+    .join(' ')
+    .toLowerCase()
+    .includes(q)
+}
+
+const DEFAULT_ORDER = DEFAULT_COLUMN_ORDER
+
+export default function OrdersTable({
+  items,
+  categories,
+  owners,
+  suppliers,
+  view,
+  setView,
+  onEdit,
+  onAddCategory,
+}) {
+  const [pending, setPending] = useState(null) // {id, patch, meta}
+  const [dragCol, setDragCol] = useState(null)
+
+  // A confirmed edit routes through here; edits with no meta commit directly.
+  const requestConfirm = (id, patch, meta) => {
+    if (!meta) return onEdit(id, patch)
+    setPending({ id, patch, meta })
+  }
+
+  const columns = useMemo(() => {
+    return [
+      {
+        accessorKey: 'package',
+        header: 'Package',
+        size: 92,
+        meta: { filter: 'set' },
+        filterFn: columnFilterFn,
+        cell: ({ row, getValue }) => (
+          <ConfirmEditCell
+            value={getValue()}
+            field="package"
+            label="Package"
+            onConfirm={(patch, meta) => requestConfirm(row.original.id, patch, meta)}
+          />
+        ),
+      },
+      {
+        accessorKey: 'item',
+        header: 'Item',
+        size: 300,
+        meta: { filter: 'text' },
+        filterFn: columnFilterFn,
+        cell: ({ row, getValue }) => (
+          <ConfirmEditCell
+            value={getValue()}
+            field="item"
+            label="Item"
+            onConfirm={(patch, meta) => requestConfirm(row.original.id, patch, meta)}
+          />
+        ),
+      },
+      {
+        accessorKey: 'category',
+        header: 'Category',
+        size: 200,
+        meta: { filter: 'set' },
+        filterFn: columnFilterFn,
+        cell: ({ row, getValue }) => (
+          <CategoryCell
+            value={getValue()}
+            categories={categories}
+            onConfirm={(patch, meta) => requestConfirm(row.original.id, patch, meta)}
+            onAddCategory={onAddCategory}
+          />
+        ),
+      },
+      {
+        accessorKey: 'department',
+        header: 'Department',
+        size: 132,
+        meta: { filter: 'set' },
+        filterFn: columnFilterFn,
+        cell: ({ row, getValue }) => (
+          <DeptCell value={getValue()} onEdit={(patch) => onEdit(row.original.id, patch)} />
+        ),
+      },
+      {
+        accessorKey: 'owner',
+        header: 'Owner',
+        size: 130,
+        meta: { filter: 'set' },
+        filterFn: columnFilterFn,
+        cell: ({ row, getValue }) => (
+          <InlineTextCell
+            value={getValue()}
+            field="owner"
+            options={owners}
+            placeholder="Unassigned"
+            onEdit={(patch) => onEdit(row.original.id, patch)}
+          />
+        ),
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        size: 150,
+        meta: { filter: 'set' },
+        filterFn: columnFilterFn,
+        cell: ({ row, getValue }) => (
+          <StatusCell value={getValue()} onEdit={(patch) => onEdit(row.original.id, patch)} />
+        ),
+      },
+      {
+        accessorKey: 'qty',
+        header: 'Qty',
+        size: 70,
+        meta: { align: 'num', filter: 'none' },
+        enableColumnFilter: false,
+        cell: ({ row, getValue }) => (
+          <QtyCell value={getValue()} onEdit={(patch) => onEdit(row.original.id, patch)} />
+        ),
+      },
+      {
+        accessorKey: 'unit_price',
+        header: 'Unit price',
+        size: 112,
+        meta: { align: 'num', filter: 'none' },
+        enableColumnFilter: false,
+        cell: ({ row, getValue }) => (
+          <ConfirmEditCell
+            value={getValue()}
+            field="unit_price"
+            label="Unit price"
+            numeric
+            parse={(s) => Number(s) || 0}
+            formatValue={(v) => formatMoney(v)}
+            editValue={(v) => (v ? String(v) : '')}
+            onConfirm={(patch, meta) => requestConfirm(row.original.id, patch, meta)}
+          />
+        ),
+      },
+      {
+        id: 'total',
+        header: 'Total',
+        accessorFn: (r) => lineTotal(r),
+        size: 120,
+        meta: { align: 'num', filter: 'none' },
+        enableColumnFilter: false,
+        cell: ({ getValue }) => <span className="cell-pad cell-num">{formatMoney(getValue())}</span>,
+      },
+      {
+        accessorKey: 'supplier',
+        header: 'Supplier',
+        size: 150,
+        meta: { filter: 'set' },
+        filterFn: columnFilterFn,
+        cell: ({ row, getValue }) => (
+          <InlineTextCell
+            value={getValue()}
+            field="supplier"
+            options={suppliers}
+            onEdit={(patch) => onEdit(row.original.id, patch)}
+          />
+        ),
+      },
+      {
+        accessorKey: 'order_no',
+        header: 'Invoice / order no.',
+        size: 150,
+        meta: { filter: 'text' },
+        filterFn: columnFilterFn,
+        cell: ({ row, getValue }) => (
+          <InlineTextCell
+            value={getValue()}
+            field="order_no"
+            onEdit={(patch) => onEdit(row.original.id, patch)}
+          />
+        ),
+      },
+      {
+        accessorKey: 'est_arrival',
+        header: 'Est. arrival date',
+        size: 150,
+        meta: { filter: 'none' },
+        enableColumnFilter: false,
+        sortUndefined: 'last',
+        cell: ({ row, getValue }) => (
+          <DateCell value={getValue()} onEdit={(patch) => onEdit(row.original.id, patch)} />
+        ),
+      },
+      {
+        accessorKey: 'ref',
+        header: 'Description / ref',
+        size: 150,
+        meta: { filter: 'text' },
+        filterFn: columnFilterFn,
+        cell: ({ row, getValue }) => (
+          <InlineTextCell
+            value={getValue()}
+            field="ref"
+            onEdit={(patch) => onEdit(row.original.id, patch)}
+          />
+        ),
+      },
+    ]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categories, owners, suppliers])
+
+  // Distinct values for the "set" filter popovers.
+  const uniqueValues = useMemo(() => {
+    const map = {}
+    for (const c of ['package', 'category', 'department', 'owner', 'status', 'supplier']) {
+      map[c] = [...new Set(items.map((i) => i[c] ?? ''))].sort((a, b) => String(a).localeCompare(String(b)))
+    }
+    return map
+  }, [items])
+
+  const table = useReactTable({
+    data: items,
+    columns,
+    state: {
+      sorting: view.sorting,
+      columnFilters: view.columnFilters,
+      columnSizing: view.columnSizing,
+      columnOrder: view.columnOrder?.length ? view.columnOrder : DEFAULT_ORDER,
+      columnPinning: { left: PINNED_COLUMNS },
+      globalFilter: view.globalFilter,
+    },
+    columnResizeMode: 'onEnd',
+    enableColumnResizing: true,
+    globalFilterFn,
+    onSortingChange: (u) => setView((p) => ({ sorting: typeof u === 'function' ? u(p.sorting) : u })),
+    onColumnFiltersChange: (u) =>
+      setView((p) => ({ columnFilters: typeof u === 'function' ? u(p.columnFilters) : u })),
+    onColumnSizingChange: (u) =>
+      setView((p) => ({ columnSizing: typeof u === 'function' ? u(p.columnSizing) : u })),
+    onGlobalFilterChange: (u) =>
+      setView((p) => ({ globalFilter: typeof u === 'function' ? u(p.globalFilter) : u })),
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+  })
+
+  const leafCols = table.getVisibleLeafColumns()
+  const rows = table.getRowModel().rows
+
+  // Drag-to-reorder (non-pinned columns only). The two pinned columns stay first.
+  const handleDrop = (targetId) => {
+    if (!dragCol || dragCol === targetId) return setDragCol(null)
+    if (PINNED_COLUMNS.includes(dragCol) || PINNED_COLUMNS.includes(targetId)) return setDragCol(null)
+    const order = (view.columnOrder?.length ? [...view.columnOrder] : [...DEFAULT_ORDER])
+    const from = order.indexOf(dragCol)
+    const to = order.indexOf(targetId)
+    if (from < 0 || to < 0) return setDragCol(null)
+    order.splice(to, 0, order.splice(from, 1)[0])
+    setView({ columnOrder: order })
+    setDragCol(null)
+  }
+
+  const setColumnFilter = (columnId, value) => table.getColumn(columnId)?.setFilterValue(value)
+
+  return (
+    <>
+      <div className="card overflow-hidden">
+        <div className="table-scroll">
+          <table className="grid">
+            <colgroup>
+              {leafCols.map((col) => (
+                <col key={col.id} style={{ width: col.getSize() }} />
+              ))}
+            </colgroup>
+            <thead>
+              {table.getHeaderGroups().map((hg) => (
+                <tr key={hg.id}>
+                  {hg.headers.map((header) => {
+                    const col = header.column
+                    const pinned = col.getIsPinned() === 'left'
+                    const isLastPinned = pinned && col.id === PINNED_COLUMNS[PINNED_COLUMNS.length - 1]
+                    const meta = col.columnDef.meta || {}
+                    const sorted = col.getIsSorted()
+                    const style = pinned ? { left: col.getStart('left'), zIndex: 7 } : undefined
+                    return (
+                      <th
+                        key={header.id}
+                        className={`${pinned ? 'pinned' : ''} ${isLastPinned ? 'pinned-shadow' : ''} ${
+                          dragCol && dragCol !== col.id ? 'drop-target' : ''
+                        }`}
+                        style={style}
+                        onDragOver={(e) => !pinned && e.preventDefault()}
+                        onDrop={() => handleDrop(col.id)}
+                      >
+                        <div className="th-inner">
+                          {!pinned && (
+                            <span
+                              className="th-grip"
+                              draggable
+                              onDragStart={() => setDragCol(col.id)}
+                              onDragEnd={() => setDragCol(null)}
+                              title="Drag to reorder"
+                            >
+                              <GripVertical size={13} />
+                            </span>
+                          )}
+                          <span
+                            className={`th-label ${meta.align === 'num' ? 'cell-num' : ''}`}
+                            onClick={col.getToggleSortingHandler()}
+                            title="Click to sort"
+                          >
+                            {flexRender(col.columnDef.header, header.getContext())}
+                          </span>
+                          <span className="th-sort" onClick={col.getToggleSortingHandler()}>
+                            {sorted === 'asc' ? (
+                              <ArrowUp size={13} />
+                            ) : sorted === 'desc' ? (
+                              <ArrowDown size={13} />
+                            ) : (
+                              <ChevronsUpDown size={12} opacity={0.4} />
+                            )}
+                          </span>
+                          {meta.filter && meta.filter !== 'none' && (
+                            <FilterPopover
+                              mode={meta.filter}
+                              uniqueValues={uniqueValues[col.id]}
+                              value={col.getFilterValue()}
+                              onChange={(v) => setColumnFilter(col.id, v)}
+                            />
+                          )}
+                        </div>
+                        {col.getCanResize() && (
+                          <span
+                            className={`resizer ${col.getIsResizing() ? 'active' : ''}`}
+                            onMouseDown={header.getResizeHandler()}
+                            onTouchStart={header.getResizeHandler()}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        )}
+                      </th>
+                    )
+                  })}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  {row.getVisibleCells().map((cell) => {
+                    const col = cell.column
+                    const pinned = col.getIsPinned() === 'left'
+                    const isLastPinned = pinned && col.id === PINNED_COLUMNS[PINNED_COLUMNS.length - 1]
+                    const meta = col.columnDef.meta || {}
+                    const style = pinned ? { left: col.getStart('left'), zIndex: 6 } : undefined
+                    return (
+                      <td
+                        key={cell.id}
+                        className={`${pinned ? 'pinned' : ''} ${isLastPinned ? 'pinned-shadow' : ''} ${
+                          meta.align === 'num' ? 'cell-num' : ''
+                        }`}
+                        style={style}
+                      >
+                        {flexRender(col.columnDef.cell, cell.getContext())}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={leafCols.length} className="center-note">
+                    No items match the current filters.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="toolbar" style={{ marginTop: 8, marginBottom: 0 }}>
+        <span className="row-count">
+          {rows.length} of {items.length} line items
+          {' · '}
+          {formatMoney(rows.reduce((s, r) => s + lineTotal(r.original), 0))} shown
+        </span>
+      </div>
+      <p className="hint">
+        Click a header to sort, the funnel to filter, and drag the grip to reorder columns. Drag a header edge to
+        resize. Package &amp; Item stay pinned while scrolling. Your sort, filters and layout are saved to your
+        account only.
+      </p>
+
+      <ConfirmModal
+        open={!!pending}
+        title={`Change ${pending?.meta.label}?`}
+        message="This is a tracked field. Confirm you want to update it."
+        change={pending ? { from: pending.meta.from, to: pending.meta.to } : null}
+        onCancel={() => setPending(null)}
+        onConfirm={() => {
+          onEdit(pending.id, pending.patch)
+          setPending(null)
+        }}
+      />
+    </>
+  )
+}
