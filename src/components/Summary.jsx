@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ArrowDown, ArrowUp, ChevronsUpDown, Search } from 'lucide-react'
 import { STATUSES } from '../lib/constants'
+import { DEPARTMENTS } from '../lib/departments'
 import { formatInt, formatMoney, lineTotal } from '../lib/format'
 import StatusBars from './StatusBars'
 
@@ -12,14 +13,27 @@ export default function Summary({ items, groupKey, groupLabel, blankLabel }) {
   const [selected, setSelected] = useState('__all')
   const [sort, setSort] = useState({ key: 'value', dir: 'desc' })
   const [query, setQuery] = useState('')
+  const [deptFilter, setDeptFilter] = useState('__all')
+  const [statusFilter, setStatusFilter] = useState('__all')
+
+  // Department / status filters scope the whole summary (totals, bars, table).
+  const scoped = useMemo(
+    () =>
+      items.filter(
+        (r) =>
+          (deptFilter === '__all' || r.department === deptFilter) &&
+          (statusFilter === '__all' || r.status === statusFilter),
+      ),
+    [items, deptFilter, statusFilter],
+  )
 
   const groups = useMemo(() => {
-    const names = [...new Set(items.map((r) => r[groupKey] || ''))]
+    const names = [...new Set(scoped.map((r) => r[groupKey] || ''))]
     const real = names.filter(Boolean).sort((a, b) => a.localeCompare(b))
     return names.includes('') ? [...real, ''] : real
-  }, [items, groupKey])
+  }, [scoped, groupKey])
 
-  const rowsFor = (name) => (name === '__all' ? items : items.filter((r) => (r[groupKey] || '') === name))
+  const rowsFor = (name) => (name === '__all' ? scoped : scoped.filter((r) => (r[groupKey] || '') === name))
 
   const statsOf = (rows) => {
     const value = rows.reduce((s, r) => s + lineTotal(r), 0)
@@ -53,7 +67,7 @@ export default function Summary({ items, groupKey, groupLabel, blankLabel }) {
       return 0
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groups, items, query, sort])
+  }, [groups, scoped, query, sort])
 
   const toggleSort = (key) =>
     setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }))
@@ -79,6 +93,38 @@ export default function Summary({ items, groupKey, groupLabel, blankLabel }) {
             </option>
           ))}
         </select>
+
+        <label style={{ fontSize: 13, fontWeight: 500 }}>Department</label>
+        <select className="ctrl" value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)}>
+          <option value="__all">All departments</option>
+          {DEPARTMENTS.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+
+        <label style={{ fontSize: 13, fontWeight: 500 }}>Status</label>
+        <select className="ctrl" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="__all">All statuses</option>
+          {STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+
+        {(deptFilter !== '__all' || statusFilter !== '__all') && (
+          <button
+            className="btn"
+            onClick={() => {
+              setDeptFilter('__all')
+              setStatusFilter('__all')
+            }}
+          >
+            Clear filters
+          </button>
+        )}
         <span className="row-count">Counts are line items, not quantities.</span>
       </div>
 

@@ -74,13 +74,12 @@ export default function App() {
     }
   }, [user])
 
-  // Team members shown in the Owner dropdown, as "First L." display names,
-  // plus any legacy owner values still present on items (e.g. "Person_1").
-  const people = useMemo(() => {
-    const fromProfiles = profiles.map(displayName).filter(Boolean)
-    const legacy = items.map((i) => i.owner).filter(Boolean)
-    return [...new Set([...fromProfiles, ...legacy])].sort((a, b) => a.localeCompare(b))
-  }, [profiles, items])
+  // Team members shown in the Owner dropdown: only signed-up users (by their
+  // "First L." display name). A blank owner counts as unassigned.
+  const people = useMemo(
+    () => [...new Set(profiles.map(displayName).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+    [profiles],
+  )
 
   const suppliers = useMemo(
     () => [...new Set(items.map((i) => i.supplier).filter(Boolean))].sort((a, b) => a.localeCompare(b)),

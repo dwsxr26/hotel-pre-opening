@@ -149,19 +149,27 @@ input.cell-input.cell-num { text-align: right; }
 .date-btn input[type='date'] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .date-placeholder { color: hsl(240 4% 72%); }
 
-/* status badge */
+/* status pill — red / yellow / green / blue */
 .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; line-height: 16px; border: 1px solid transparent; }
-.badge .dot { width: 6px; height: 6px; border-radius: 99px; display: inline-block; }
-.st-not { background: hsl(36 18% 92%); color: hsl(30 12% 38%); border-color: hsl(36 15% 82%); }
-.st-not .dot { background: #c0b0a6; }
-.st-placed { background: hsl(193 12% 92%); color: hsl(193 20% 30%); border-color: hsl(193 12% 80%); }
-.st-placed .dot { background: #5d7176; }
-.st-arrived { background: hsl(104 10% 92%); color: hsl(120 12% 30%); border-color: hsl(104 12% 80%); }
-.st-arrived .dot { background: #8fa08b; }
-.st-returned { background: hsl(18 35% 93%); color: hsl(16 35% 38%); border-color: hsl(18 35% 83%); }
-.st-returned .dot { background: #c18d79; }
-.status-cell { display: flex; align-items: center; gap: 4px; height: 100%; padding-left: 8px; }
-.status-cell select { flex: 1; }
+.badge .dot { width: 6px; height: 6px; border-radius: 99px; display: inline-block; flex: none; }
+.st-not { background: hsl(0 80% 96%); color: hsl(0 55% 42%); border-color: hsl(0 70% 88%); }
+.st-not .dot { background: #e5484d; }
+.st-placed { background: hsl(45 92% 91%); color: hsl(38 65% 34%); border-color: hsl(45 75% 78%); }
+.st-placed .dot { background: #eab308; }
+.st-arrived { background: hsl(146 55% 93%); color: hsl(146 45% 28%); border-color: hsl(146 45% 80%); }
+.st-arrived .dot { background: #30a46c; }
+.st-returned { background: hsl(212 90% 95%); color: hsl(212 60% 42%); border-color: hsl(212 75% 85%); }
+.st-returned .dot { background: #3b82f6; }
+
+/* status cell: the whole pill is a dropdown */
+.status-cell { display: flex; align-items: center; height: 100%; padding-left: 8px; }
+.status-pill { max-width: calc(100% - 8px); cursor: pointer; }
+.status-select {
+  border: 0; background: transparent; color: inherit; font: inherit; font-weight: 600;
+  appearance: none; cursor: pointer; outline: none; padding: 0 2px; max-width: 100%;
+  text-overflow: ellipsis;
+}
+.status-select:focus-visible { text-decoration: underline; }
 .dept-cell { display: block; height: 100%; }
 
 /* header filter popover */

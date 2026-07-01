@@ -9,12 +9,12 @@ export const STATUS_CLASS = {
   Returned: 'st-returned',
 }
 
-// Bar-fill colours matching each status badge dot (from the original mockup).
+// Bar-fill / dot colours matching each status: red, yellow, green, blue.
 export const STATUS_COLOR = {
-  'Not ordered': '#C0B0A6',
-  'Order placed': '#5D7176',
-  'Order arrived': '#8fa08b',
-  Returned: '#C18D79',
+  'Not ordered': '#e5484d',
+  'Order placed': '#eab308',
+  'Order arrived': '#30a46c',
+  Returned: '#3b82f6',
 }
 
 // Page-size choices for the orders grid.
