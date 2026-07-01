@@ -17,6 +17,7 @@ const DEFAULT_VIEW = {
   columnSizing: {},
   columnOrder: DEFAULT_COLUMN_ORDER,
   globalFilter: '',
+  pagination: { pageIndex: 0, pageSize: 50 },
 }
 
 const TABS = [

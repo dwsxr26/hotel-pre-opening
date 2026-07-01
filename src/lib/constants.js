@@ -9,6 +9,17 @@ export const STATUS_CLASS = {
   Returned: 'st-returned',
 }
 
+// Bar-fill colours matching each status badge dot (from the original mockup).
+export const STATUS_COLOR = {
+  'Not ordered': '#C0B0A6',
+  'Order placed': '#5D7176',
+  'Order arrived': '#8fa08b',
+  Returned: '#C18D79',
+}
+
+// Page-size choices for the orders grid.
+export const PAGE_SIZES = [25, 50, 100]
+
 // Column ids that require a confirmation dialog before an edit is committed.
 export const CONFIRM_EDIT_COLUMNS = new Set(['package', 'item', 'category', 'unit_price'])
 

@@ -3,12 +3,14 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowDown, ArrowUp, ChevronsUpDown, GripVertical } from 'lucide-react'
-import { DEFAULT_COLUMN_ORDER, PINNED_COLUMNS } from '../lib/constants'
+import { ArrowDown, ArrowUp, ChevronsUpDown, ChevronLeft, ChevronRight, GripVertical } from 'lucide-react'
+import { DEFAULT_COLUMN_ORDER, PAGE_SIZES, PINNED_COLUMNS } from '../lib/constants'
+import StatusBars from './StatusBars'
 import { formatMoney, lineTotal } from '../lib/format'
 import FilterPopover from './FilterPopover'
 import ConfirmModal from './ConfirmModal'
@@ -260,6 +262,7 @@ export default function OrdersTable({
       columnOrder: view.columnOrder?.length ? view.columnOrder : DEFAULT_ORDER,
       columnPinning: { left: PINNED_COLUMNS },
       globalFilter: view.globalFilter,
+      pagination: view.pagination,
     },
     columnResizeMode: 'onChange',
     enableColumnResizing: true,
@@ -271,13 +274,17 @@ export default function OrdersTable({
       setView((p) => ({ columnSizing: typeof u === 'function' ? u(p.columnSizing) : u })),
     onGlobalFilterChange: (u) =>
       setView((p) => ({ globalFilter: typeof u === 'function' ? u(p.globalFilter) : u })),
+    onPaginationChange: (u) =>
+      setView((p) => ({ pagination: typeof u === 'function' ? u(p.pagination) : u })),
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   })
 
   const leafCols = table.getVisibleLeafColumns()
-  const rows = table.getRowModel().rows
+  const filteredRows = table.getFilteredRowModel().rows // all matching rows (across pages)
+  const rows = table.getRowModel().rows // just the current page
 
   // Virtualize rows: only the ~visible rows are mounted, so sort/filter/resize/
   // edit/scroll stay fast no matter how many line items there are.
@@ -354,8 +361,19 @@ export default function OrdersTable({
     [rows, view.columnOrder, columns, rangeKey, padTop, padBottom],
   )
 
+  const rowsData = useMemo(() => filteredRows.map((r) => r.original), [filteredRows])
+  const pageCount = table.getPageCount()
+  const pageIndex = table.getState().pagination.pageIndex
+  const pageSize = table.getState().pagination.pageSize
+  const firstShown = filteredRows.length === 0 ? 0 : pageIndex * pageSize + 1
+  const lastShown = Math.min((pageIndex + 1) * pageSize, filteredRows.length)
+
   return (
     <>
+      <div className="card summary-pad" style={{ marginBottom: 12 }}>
+        <StatusBars rows={rowsData} grid />
+      </div>
+
       <div className="card overflow-hidden">
         <div className="table-scroll" ref={scrollRef}>
           <table className="grid" style={{ '--pin-item-left': `${pkgWidth}px` }}>
@@ -466,17 +484,47 @@ export default function OrdersTable({
         </div>
       </div>
 
-      <div className="toolbar" style={{ marginTop: 8, marginBottom: 0 }}>
+      <div className="pager">
         <span className="row-count">
-          {rows.length} of {items.length} line items
+          {filteredRows.length === 0
+            ? '0 line items'
+            : `Showing ${firstShown}–${lastShown} of ${filteredRows.length}`}
+          {filteredRows.length !== items.length ? ` (filtered from ${items.length})` : ''}
           {' · '}
-          {formatMoney(rows.reduce((s, r) => s + lineTotal(r.original), 0))} shown
+          {formatMoney(rowsData.reduce((s, r) => s + lineTotal(r), 0))}
         </span>
+        <div className="spacer" />
+        <label className="pager-size">
+          Rows
+          <select
+            className="ctrl"
+            value={pageSize}
+            onChange={(e) => table.setPageSize(Number(e.target.value))}
+          >
+            {PAGE_SIZES.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+            <option value={items.length}>All</option>
+          </select>
+        </label>
+        <div className="pager-nav">
+          <button className="btn" disabled={!table.getCanPreviousPage()} onClick={() => table.previousPage()}>
+            <ChevronLeft size={15} />
+          </button>
+          <span className="pager-info">
+            Page {pageIndex + 1} of {Math.max(1, pageCount)}
+          </span>
+          <button className="btn" disabled={!table.getCanNextPage()} onClick={() => table.nextPage()}>
+            <ChevronRight size={15} />
+          </button>
+        </div>
       </div>
       <p className="hint">
         Click a header to sort, the funnel to filter, and drag the grip to reorder columns. Drag a header edge to
-        resize. Package &amp; Item stay pinned while scrolling. Your sort, filters and layout are saved to your
-        account only.
+        resize. Package &amp; Item stay pinned while scrolling. Your sort, filters, layout and page size are saved to
+        your account only.
       </p>
 
       <ConfirmModal
