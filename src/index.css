@@ -95,9 +95,12 @@ select.ctrl { appearance: none; cursor: pointer; padding-right: 26px;
 .grid tbody tr:hover td { background: var(--row-hover); }
 .num, .cell-num { text-align: right; font-variant-numeric: tabular-nums; }
 
-/* pinned (sticky) columns */
+/* pinned (sticky) columns — left offset comes from a CSS variable so resizing
+   doesn't require re-rendering the rows */
 .grid th.pinned, .grid td.pinned { position: sticky; z-index: 6; }
 .grid th.pinned { z-index: 7; }
+.grid .pin-pkg { left: 0; }
+.grid .pin-item { left: var(--pin-item-left, 0); }
 .grid .pinned-shadow { box-shadow: 6px 0 6px -6px rgba(0, 0, 0, 0.12); }
 
 /* header internals */
@@ -109,8 +112,20 @@ select.ctrl { appearance: none; cursor: pointer; padding-right: 26px;
 .resizer { position: absolute; right: 0; top: 0; height: 100%; width: 8px; cursor: col-resize; z-index: 8; touch-action: none; }
 .resizer::after { content: ''; position: absolute; right: 3px; top: 6px; bottom: 6px; width: 2px; background: transparent; }
 .resizer:hover::after, .resizer.active::after { background: var(--ring); }
-th.dragging { opacity: 0.4; }
-th.drag-over { box-shadow: inset 3px 0 0 var(--accent); }
+/* column drag-to-reorder feedback */
+th.drag-source { opacity: 0.45; }
+th.drag-source .th-inner { background: hsl(140 40% 96%); }
+th.drag-over { background: hsl(141 60% 94%); }
+th.drag-over .th-inner { background: hsl(141 60% 94%); }
+/* pastel-green insertion line marking where the column will drop */
+th.drag-over::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: hsl(142 55% 55%);
+  z-index: 9;
+}
 
 /* inline editors */
 .cell-input { width: 100%; height: 100%; border: 0; background: transparent; padding: 0 10px; font: inherit; color: inherit; outline: none; }
@@ -165,7 +180,6 @@ input.cell-input.cell-num { text-align: right; }
 .filter-text { width: 100%; height: 30px; border: 1px solid var(--border); border-radius: 7px; padding: 0 8px; font: inherit; font-size: 12px; outline: none; }
 .filter-actions { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; }
 .filter-actions .btn { height: 28px; padding: 0 10px; font-size: 12px; }
-th.drop-target .th-inner { background: hsl(200 25% 96%); }
 
 .hint { font-size: 11px; color: var(--muted-fg); margin-top: 8px; }
 

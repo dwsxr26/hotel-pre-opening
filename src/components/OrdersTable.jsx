@@ -53,7 +53,8 @@ export default function OrdersTable({
   onAddCategory,
 }) {
   const [pending, setPending] = useState(null) // {id, patch, meta}
-  const [dragCol, setDragCol] = useState(null)
+  const [dragCol, setDragCol] = useState(null) // column being dragged
+  const [dragOverCol, setDragOverCol] = useState(null) // column currently under the cursor
 
   // A confirmed edit routes through here; edits with no meta commit directly.
   const requestConfirm = (id, patch, meta) => {
@@ -292,26 +293,72 @@ export default function OrdersTable({
   const padTop = virtualRows.length ? virtualRows[0].start : 0
   const padBottom = virtualRows.length ? totalSize - virtualRows[virtualRows.length - 1].end : 0
 
+  // Left offset for the pinned "item" column = width of the pinned "package"
+  // column. Exposed as a CSS variable so resizing does NOT need to re-render
+  // every row — the browser repositions the sticky column from the variable.
+  const pkgWidth = table.getColumn('package')?.getSize() ?? 0
+
   // Drag-to-reorder (non-pinned columns only). The two pinned columns stay first.
+  const clearDrag = () => {
+    setDragCol(null)
+    setDragOverCol(null)
+  }
   const handleDrop = (targetId) => {
-    if (!dragCol || dragCol === targetId) return setDragCol(null)
-    if (PINNED_COLUMNS.includes(dragCol) || PINNED_COLUMNS.includes(targetId)) return setDragCol(null)
-    const order = (view.columnOrder?.length ? [...view.columnOrder] : [...DEFAULT_ORDER])
+    if (!dragCol || dragCol === targetId) return clearDrag()
+    if (PINNED_COLUMNS.includes(dragCol) || PINNED_COLUMNS.includes(targetId)) return clearDrag()
+    const order = view.columnOrder?.length ? [...view.columnOrder] : [...DEFAULT_ORDER]
     const from = order.indexOf(dragCol)
     const to = order.indexOf(targetId)
-    if (from < 0 || to < 0) return setDragCol(null)
+    if (from < 0 || to < 0) return clearDrag()
     order.splice(to, 0, order.splice(from, 1)[0])
     setView({ columnOrder: order })
-    setDragCol(null)
+    clearDrag()
+  }
+
+  // Class describing a pinned cell's left offset (0 for package, the CSS var for item).
+  const pinClass = (col) => {
+    if (col.getIsPinned() !== 'left') return ''
+    const last = col.id === PINNED_COLUMNS[PINNED_COLUMNS.length - 1]
+    return `pinned ${col.id === 'package' ? 'pin-pkg' : 'pin-item'}${last ? ' pinned-shadow' : ''}`
   }
 
   const setColumnFilter = (columnId, value) => table.getColumn(columnId)?.setFilterValue(value)
+
+  // The rendered rows are memoized on what actually changes their content
+  // (data, sort/filter -> `rows`; reorder -> `columnOrder`; scroll -> `rangeKey`;
+  // dropdown sources -> `columns`). Column *sizing* is deliberately excluded, so
+  // dragging a resizer only updates the <colgroup> widths and the pinned-left CSS
+  // variable — the row cells are not re-rendered at all.
+  const rangeKey = virtualRows.length
+    ? `${virtualRows[0].index}-${virtualRows[virtualRows.length - 1].index}`
+    : 'empty'
+  const bodyRows = useMemo(
+    () =>
+      virtualRows.map((vr) => {
+        const row = rows[vr.index]
+        return (
+          <tr key={row.id}>
+            {row.getVisibleCells().map((cell) => {
+              const col = cell.column
+              const meta = col.columnDef.meta || {}
+              return (
+                <td key={cell.id} className={`${pinClass(col)} ${meta.align === 'num' ? 'cell-num' : ''}`}>
+                  {flexRender(col.columnDef.cell, cell.getContext())}
+                </td>
+              )
+            })}
+          </tr>
+        )
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rows, view.columnOrder, columns, rangeKey, padTop, padBottom],
+  )
 
   return (
     <>
       <div className="card overflow-hidden">
         <div className="table-scroll" ref={scrollRef}>
-          <table className="grid">
+          <table className="grid" style={{ '--pin-item-left': `${pkgWidth}px` }}>
             <colgroup>
               {leafCols.map((col) => (
                 <col key={col.id} style={{ width: col.getSize() }} />
@@ -323,18 +370,21 @@ export default function OrdersTable({
                   {hg.headers.map((header) => {
                     const col = header.column
                     const pinned = col.getIsPinned() === 'left'
-                    const isLastPinned = pinned && col.id === PINNED_COLUMNS[PINNED_COLUMNS.length - 1]
                     const meta = col.columnDef.meta || {}
                     const sorted = col.getIsSorted()
-                    const style = pinned ? { left: col.getStart('left'), zIndex: 7 } : undefined
+                    const canDrop = dragCol && dragCol !== col.id && !pinned
                     return (
                       <th
                         key={header.id}
-                        className={`${pinned ? 'pinned' : ''} ${isLastPinned ? 'pinned-shadow' : ''} ${
-                          dragCol && dragCol !== col.id ? 'drop-target' : ''
+                        className={`${pinClass(col)} ${col.id === dragCol ? 'drag-source' : ''} ${
+                          col.id === dragOverCol ? 'drag-over' : ''
                         }`}
-                        style={style}
-                        onDragOver={(e) => !pinned && e.preventDefault()}
+                        onDragEnter={() => canDrop && setDragOverCol(col.id)}
+                        onDragOver={(e) => {
+                          if (!canDrop) return
+                          e.preventDefault()
+                          if (dragOverCol !== col.id) setDragOverCol(col.id)
+                        }}
                         onDrop={() => handleDrop(col.id)}
                       >
                         <div className="th-inner">
@@ -398,31 +448,7 @@ export default function OrdersTable({
                   <td colSpan={leafCols.length} style={{ height: padTop, padding: 0, border: 0 }} />
                 </tr>
               )}
-              {virtualRows.map((vr) => {
-                const row = rows[vr.index]
-                return (
-                  <tr key={row.id}>
-                    {row.getVisibleCells().map((cell) => {
-                      const col = cell.column
-                      const pinned = col.getIsPinned() === 'left'
-                      const isLastPinned = pinned && col.id === PINNED_COLUMNS[PINNED_COLUMNS.length - 1]
-                      const meta = col.columnDef.meta || {}
-                      const style = pinned ? { left: col.getStart('left'), zIndex: 6 } : undefined
-                      return (
-                        <td
-                          key={cell.id}
-                          className={`${pinned ? 'pinned' : ''} ${isLastPinned ? 'pinned-shadow' : ''} ${
-                            meta.align === 'num' ? 'cell-num' : ''
-                          }`}
-                          style={style}
-                        >
-                          {flexRender(col.columnDef.cell, cell.getContext())}
-                        </td>
-                      )
-                    })}
-                  </tr>
-                )
-              })}
+              {bodyRows}
               {padBottom > 0 && (
                 <tr aria-hidden="true">
                   <td colSpan={leafCols.length} style={{ height: padBottom, padding: 0, border: 0 }} />
