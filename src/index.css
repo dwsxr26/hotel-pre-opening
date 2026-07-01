@@ -99,8 +99,9 @@ select.ctrl { appearance: none; cursor: pointer; padding-right: 26px;
    doesn't require re-rendering the rows */
 .grid th.pinned, .grid td.pinned { position: sticky; z-index: 6; }
 .grid th.pinned { z-index: 7; }
-.grid .pin-pkg { left: 0; }
-.grid .pin-item { left: var(--pin-item-left, 0); }
+/* explicit widths so the sticky pinned cells resize reliably and truncate */
+.grid .pin-pkg { left: 0; width: var(--pkg-w); min-width: var(--pkg-w); max-width: var(--pkg-w); }
+.grid .pin-item { left: var(--pin-item-left, 0); width: var(--item-w); min-width: var(--item-w); max-width: var(--item-w); }
 .grid .pinned-shadow { box-shadow: 6px 0 6px -6px rgba(0, 0, 0, 0.12); }
 
 /* header internals */
@@ -216,6 +217,13 @@ input.cell-input.cell-num { text-align: right; }
 .statusbar-track { height: 8px; border-radius: 999px; background: var(--muted); overflow: hidden; }
 .statusbar-fill { height: 100%; border-radius: 999px; transition: width 0.2s ease; }
 
+/* collapsible section header */
+.collapse-hd { display: flex; align-items: center; gap: 8px; width: 100%; padding: 12px 20px; background: none; border: 0; cursor: pointer; font: inherit; color: inherit; text-align: left; }
+.collapse-hd:hover { background: hsl(240 4.8% 98.4%); }
+.collapse-chev { color: var(--muted-fg); transition: transform 0.15s ease; transform: rotate(-90deg); flex: none; }
+.collapse-chev.open { transform: rotate(0deg); }
+.collapse-hint { margin-left: auto; font-size: 11px; color: var(--muted-fg); }
+
 /* pagination footer */
 .pager { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
 .pager-size { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted-fg); }
@@ -236,7 +244,10 @@ input.cell-input.cell-num { text-align: right; }
 .modal .from-to { font-size: 13px; }
 .modal .from-to .old { color: var(--muted-fg); text-decoration: line-through; }
 .modal .from-to .new { font-weight: 600; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.invite-row { display: flex; gap: 8px; }
+.invite-row input { flex: 1; }
+a.btn { text-decoration: none; }
 
 /* -------------------------------------------------------------------- auth */
 .auth-wrap { min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 24px; }

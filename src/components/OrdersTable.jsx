@@ -8,8 +8,12 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowDown, ArrowUp, ChevronsUpDown, ChevronLeft, ChevronRight, GripVertical } from 'lucide-react'
+import {
+  ArrowDown, ArrowUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight,
+  Download, GripVertical,
+} from 'lucide-react'
 import { DEFAULT_COLUMN_ORDER, PAGE_SIZES, PINNED_COLUMNS } from '../lib/constants'
+import { downloadCsv, itemsToCsv } from '../lib/csv'
 import StatusBars from './StatusBars'
 import { formatMoney, lineTotal } from '../lib/format'
 import FilterPopover from './FilterPopover'
@@ -17,6 +21,7 @@ import ConfirmModal from './ConfirmModal'
 import ConfirmEditCell from './cells/ConfirmEditCell'
 import CategoryCell from './cells/CategoryCell'
 import InlineTextCell from './cells/InlineTextCell'
+import OwnerCell from './cells/OwnerCell'
 import QtyCell from './cells/QtyCell'
 import StatusCell from './cells/StatusCell'
 import DeptCell from './cells/DeptCell'
@@ -47,7 +52,7 @@ const DEFAULT_ORDER = DEFAULT_COLUMN_ORDER
 export default function OrdersTable({
   items,
   categories,
-  owners,
+  people,
   suppliers,
   view,
   setView,
@@ -128,13 +133,7 @@ export default function OrdersTable({
         meta: { filter: 'set' },
         filterFn: columnFilterFn,
         cell: ({ row, getValue }) => (
-          <InlineTextCell
-            value={getValue()}
-            field="owner"
-            options={owners}
-            placeholder="Unassigned"
-            onEdit={(patch) => onEdit(row.original.id, patch)}
-          />
+          <OwnerCell value={getValue()} people={people} onEdit={(patch) => onEdit(row.original.id, patch)} />
         ),
       },
       {
@@ -241,7 +240,7 @@ export default function OrdersTable({
       },
     ]
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categories, owners, suppliers])
+  }, [categories, people, suppliers])
 
   // Distinct values for the "set" filter popovers.
   const uniqueValues = useMemo(() => {
@@ -300,10 +299,14 @@ export default function OrdersTable({
   const padTop = virtualRows.length ? virtualRows[0].start : 0
   const padBottom = virtualRows.length ? totalSize - virtualRows[virtualRows.length - 1].end : 0
 
-  // Left offset for the pinned "item" column = width of the pinned "package"
-  // column. Exposed as a CSS variable so resizing does NOT need to re-render
-  // every row — the browser repositions the sticky column from the variable.
+  // Pinned columns are position:sticky, and sticky cells don't reliably adopt
+  // <colgroup> widths in a fixed-layout table. So we drive BOTH their width and
+  // the item column's left offset from CSS variables on the table element. This
+  // makes resizing them reliable AND keeps rows out of the re-render (the body
+  // is memoized, widths come from the variables).
   const pkgWidth = table.getColumn('package')?.getSize() ?? 0
+  const itemWidth = table.getColumn('item')?.getSize() ?? 0
+  const pinVars = { '--pkg-w': `${pkgWidth}px`, '--item-w': `${itemWidth}px`, '--pin-item-left': `${pkgWidth}px` }
 
   // Drag-to-reorder (non-pinned columns only). The two pinned columns stay first.
   const clearDrag = () => {
@@ -368,15 +371,27 @@ export default function OrdersTable({
   const firstShown = filteredRows.length === 0 ? 0 : pageIndex * pageSize + 1
   const lastShown = Math.min((pageIndex + 1) * pageSize, filteredRows.length)
 
+  const summaryOpen = view.summaryOpen !== false
+  const exportCsv = () => downloadCsv('florence-pre-opening.csv', itemsToCsv(rowsData))
+
   return (
     <>
-      <div className="card summary-pad" style={{ marginBottom: 12 }}>
-        <StatusBars rows={rowsData} grid />
+      <div className="card" style={{ marginBottom: 12 }}>
+        <button className="collapse-hd" onClick={() => setView({ summaryOpen: !summaryOpen })}>
+          <ChevronDown size={16} className={`collapse-chev ${summaryOpen ? 'open' : ''}`} />
+          <span className="card-hd" style={{ padding: 0, border: 0 }}>Line items by status</span>
+          <span className="collapse-hint">{summaryOpen ? 'Hide' : 'Show'}</span>
+        </button>
+        {summaryOpen && (
+          <div className="summary-pad" style={{ paddingTop: 0 }}>
+            <StatusBars rows={rowsData} grid title={null} />
+          </div>
+        )}
       </div>
 
       <div className="card overflow-hidden">
         <div className="table-scroll" ref={scrollRef}>
-          <table className="grid" style={{ '--pin-item-left': `${pkgWidth}px` }}>
+          <table className="grid" style={pinVars}>
             <colgroup>
               {leafCols.map((col) => (
                 <col key={col.id} style={{ width: col.getSize() }} />
@@ -494,6 +509,9 @@ export default function OrdersTable({
           {formatMoney(rowsData.reduce((s, r) => s + lineTotal(r), 0))}
         </span>
         <div className="spacer" />
+        <button className="btn" onClick={exportCsv} title="Export the currently filtered rows to CSV">
+          <Download size={14} /> Export CSV
+        </button>
         <label className="pager-size">
           Rows
           <select

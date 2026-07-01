@@ -1,6 +1,9 @@
+import { UserPen, UserPlus } from 'lucide-react'
 import { supabase } from '../supabase'
+import { displayName } from '../lib/people'
 
-export default function Header({ user }) {
+export default function Header({ user, profile, onEditName, onInvite }) {
+  const name = displayName(profile) || user?.email
   return (
     <div className="header">
       <div>
@@ -9,7 +12,12 @@ export default function Header({ user }) {
         <p className="subtitle">Shared pre-opening spend &amp; order tracker. Allocate owners, set status, track arrivals.</p>
       </div>
       <div className="header-actions">
-        {user && <span className="user-chip">{user.email}</span>}
+        <button className="btn" onClick={onInvite} title="Invite teammates">
+          <UserPlus size={15} /> Invite
+        </button>
+        <button className="btn" onClick={onEditName} title="Edit your name">
+          <UserPen size={15} /> {name}
+        </button>
         <button className="btn" onClick={() => supabase.auth.signOut()}>
           Sign out
         </button>

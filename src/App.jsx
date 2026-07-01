@@ -4,12 +4,16 @@ import { useAuth } from './hooks/useAuth'
 import { useViewPrefs } from './hooks/useViewPrefs'
 import { fetchItems, subscribeItems, updateItem } from './data/items'
 import { addCategory, fetchCategories } from './data/categories'
+import { ensureMyProfile, fetchProfiles, updateMyProfile } from './data/profiles'
 import { DEFAULT_COLUMN_ORDER } from './lib/constants'
+import { displayName } from './lib/people'
 import Auth from './components/Auth'
 import Header from './components/Header'
 import Kpis from './components/Kpis'
 import OrdersTable from './components/OrdersTable'
 import Summary from './components/Summary'
+import ProfileModal from './components/ProfileModal'
+import InviteModal from './components/InviteModal'
 
 const DEFAULT_VIEW = {
   sorting: [],
@@ -18,6 +22,7 @@ const DEFAULT_VIEW = {
   columnOrder: DEFAULT_COLUMN_ORDER,
   globalFilter: '',
   pagination: { pageIndex: 0, pageSize: 50 },
+  summaryOpen: true,
 }
 
 const TABS = [
@@ -30,6 +35,10 @@ export default function App() {
   const { user, loading: authLoading } = useAuth()
   const [items, setItems] = useState([])
   const [categories, setCategories] = useState([])
+  const [profiles, setProfiles] = useState([])
+  const [myProfile, setMyProfile] = useState(null)
+  const [showProfile, setShowProfile] = useState(false)
+  const [showInvite, setShowInvite] = useState(false)
   const [dataLoading, setDataLoading] = useState(true)
   const [tab, setTab] = useState('orders')
 
@@ -40,15 +49,24 @@ export default function App() {
     if (!user) return
     let active = true
     const load = () =>
-      Promise.all([fetchItems(), fetchCategories()])
-        .then(([its, cats]) => {
+      Promise.all([fetchItems(), fetchCategories(), fetchProfiles()])
+        .then(([its, cats, profs]) => {
           if (!active) return
           setItems(its)
           setCategories(cats.map((c) => c.name))
+          setProfiles(profs)
         })
         .catch((err) => console.error('Load failed', err))
         .finally(() => active && setDataLoading(false))
     load()
+    // Make sure this user has a profile; prompt for a name if it's blank.
+    ensureMyProfile()
+      .then((mine) => {
+        if (!active || !mine) return
+        setMyProfile(mine)
+        if (!mine.first_name) setShowProfile(true)
+      })
+      .catch((err) => console.error('Profile load failed', err))
     const unsub = subscribeItems(() => load())
     return () => {
       active = false
@@ -56,10 +74,14 @@ export default function App() {
     }
   }, [user])
 
-  const owners = useMemo(
-    () => [...new Set(items.map((i) => i.owner).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
-    [items],
-  )
+  // Team members shown in the Owner dropdown, as "First L." display names,
+  // plus any legacy owner values still present on items (e.g. "Person_1").
+  const people = useMemo(() => {
+    const fromProfiles = profiles.map(displayName).filter(Boolean)
+    const legacy = items.map((i) => i.owner).filter(Boolean)
+    return [...new Set([...fromProfiles, ...legacy])].sort((a, b) => a.localeCompare(b))
+  }, [profiles, items])
+
   const suppliers = useMemo(
     () => [...new Set(items.map((i) => i.supplier).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
     [items],
@@ -92,12 +114,29 @@ export default function App() {
     return created
   }, [])
 
+  const onSaveProfile = useCallback(async ({ first_name, last_name }) => {
+    const updated = await updateMyProfile({ first_name, last_name })
+    if (updated) {
+      setMyProfile(updated)
+      setProfiles((cur) => {
+        const rest = cur.filter((p) => p.user_id !== updated.user_id)
+        return [...rest, updated].sort((a, b) => (a.first_name || '').localeCompare(b.first_name || ''))
+      })
+    }
+    return updated
+  }, [])
+
   if (authLoading) return <div className="center-note">Loading…</div>
   if (!user) return <Auth />
 
   return (
     <div className="page">
-      <Header user={user} />
+      <Header
+        user={user}
+        profile={myProfile}
+        onEditName={() => setShowProfile(true)}
+        onInvite={() => setShowInvite(true)}
+      />
       <Kpis items={items} />
 
       <div className="tabs">
@@ -137,7 +176,7 @@ export default function App() {
           <OrdersTable
             items={items}
             categories={categories}
-            owners={owners}
+            people={people}
             suppliers={suppliers}
             view={view}
             setView={setView}
@@ -150,6 +189,16 @@ export default function App() {
       ) : (
         <Summary items={items} groupKey="supplier" groupLabel="Supplier" blankLabel="(No supplier)" />
       )}
+
+      {showProfile && (
+        <ProfileModal
+          profile={myProfile}
+          required={!myProfile?.first_name}
+          onSave={onSaveProfile}
+          onClose={() => setShowProfile(false)}
+        />
+      )}
+      {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
     </div>
   )
 }
