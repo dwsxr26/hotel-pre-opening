@@ -200,17 +200,34 @@ export default function OrdersTable({
         ),
       },
       {
-        accessorKey: 'order_no',
-        header: 'Invoice / order no.',
-        size: 150,
+        accessorKey: 'order_date',
+        header: 'Order date',
+        size: 140,
+        meta: { filter: 'none' },
+        enableColumnFilter: false,
+        sortUndefined: 'last',
+        cell: ({ row, getValue }) => (
+          <DateCell value={getValue()} field="order_date" onEdit={(patch) => onEdit(row.original.id, patch)} />
+        ),
+      },
+      {
+        accessorKey: 'invoice_no',
+        header: 'Invoice #',
+        size: 130,
         meta: { filter: 'text' },
         filterFn: columnFilterFn,
         cell: ({ row, getValue }) => (
-          <InlineTextCell
-            value={getValue()}
-            field="order_no"
-            onEdit={(patch) => onEdit(row.original.id, patch)}
-          />
+          <InlineTextCell value={getValue()} field="invoice_no" onEdit={(patch) => onEdit(row.original.id, patch)} />
+        ),
+      },
+      {
+        accessorKey: 'order_no',
+        header: 'Order #',
+        size: 130,
+        meta: { filter: 'text' },
+        filterFn: columnFilterFn,
+        cell: ({ row, getValue }) => (
+          <InlineTextCell value={getValue()} field="order_no" onEdit={(patch) => onEdit(row.original.id, patch)} />
         ),
       },
       {
@@ -221,7 +238,7 @@ export default function OrdersTable({
         enableColumnFilter: false,
         sortUndefined: 'last',
         cell: ({ row, getValue }) => (
-          <DateCell value={getValue()} onEdit={(patch) => onEdit(row.original.id, patch)} />
+          <DateCell value={getValue()} field="est_arrival" onEdit={(patch) => onEdit(row.original.id, patch)} />
         ),
       },
       {
@@ -242,6 +259,16 @@ export default function OrdersTable({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categories, people, suppliers])
 
+  // Reconcile a saved column order with the current columns: keep the user's
+  // ordering for known columns and append any new columns (so a schema change
+  // never drops or hides a column, and stale ids are ignored).
+  const effectiveOrder = useMemo(() => {
+    const saved = view.columnOrder?.length ? view.columnOrder : DEFAULT_ORDER
+    const known = saved.filter((id) => DEFAULT_ORDER.includes(id))
+    const missing = DEFAULT_ORDER.filter((id) => !known.includes(id))
+    return [...known, ...missing]
+  }, [view.columnOrder])
+
   // Distinct values for the "set" filter popovers.
   const uniqueValues = useMemo(() => {
     const map = {}
@@ -258,7 +285,7 @@ export default function OrdersTable({
       sorting: view.sorting,
       columnFilters: view.columnFilters,
       columnSizing: view.columnSizing,
-      columnOrder: view.columnOrder?.length ? view.columnOrder : DEFAULT_ORDER,
+      columnOrder: effectiveOrder,
       columnPinning: { left: PINNED_COLUMNS },
       globalFilter: view.globalFilter,
       pagination: view.pagination,
@@ -316,7 +343,7 @@ export default function OrdersTable({
   const handleDrop = (targetId) => {
     if (!dragCol || dragCol === targetId) return clearDrag()
     if (PINNED_COLUMNS.includes(dragCol) || PINNED_COLUMNS.includes(targetId)) return clearDrag()
-    const order = view.columnOrder?.length ? [...view.columnOrder] : [...DEFAULT_ORDER]
+    const order = [...effectiveOrder]
     const from = order.indexOf(dragCol)
     const to = order.indexOf(targetId)
     if (from < 0 || to < 0) return clearDrag()
@@ -351,8 +378,16 @@ export default function OrdersTable({
             {row.getVisibleCells().map((cell) => {
               const col = cell.column
               const meta = col.columnDef.meta || {}
+              // Amber-flag missing Invoice #/Order # on "Order placed" rows.
+              const req =
+                (col.id === 'invoice_no' || col.id === 'order_no') &&
+                row.original.status === 'Order placed' &&
+                !row.original[col.id]
               return (
-                <td key={cell.id} className={`${pinClass(col)} ${meta.align === 'num' ? 'cell-num' : ''}`}>
+                <td
+                  key={cell.id}
+                  className={`${pinClass(col)} ${meta.align === 'num' ? 'cell-num' : ''} ${req ? 'cell-required' : ''}`}
+                >
                   {flexRender(col.columnDef.cell, cell.getContext())}
                 </td>
               )
@@ -373,6 +408,9 @@ export default function OrdersTable({
 
   const summaryOpen = view.summaryOpen !== false
   const exportCsv = () => downloadCsv('florence-pre-opening.csv', itemsToCsv(rowsData))
+  const missingCount = rowsData.filter(
+    (r) => r.status === 'Order placed' && (!r.invoice_no || !r.order_no),
+  ).length
 
   return (
     <>
@@ -388,6 +426,12 @@ export default function OrdersTable({
           </div>
         )}
       </div>
+
+      {missingCount > 0 && (
+        <div className="warn-banner">
+          ⚠ {missingCount} “Order placed” {missingCount === 1 ? 'item is' : 'items are'} missing an Invoice # or Order #.
+        </div>
+      )}
 
       <div className="card overflow-hidden">
         <div className="table-scroll" ref={scrollRef}>

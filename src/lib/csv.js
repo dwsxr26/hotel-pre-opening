@@ -2,7 +2,7 @@ import { lineTotal } from './format'
 
 const HEADERS = [
   'Package', 'Item', 'Category', 'Department', 'Owner', 'Status', 'Qty',
-  'Unit price', 'Total', 'Supplier', 'Invoice/order no.', 'Est. arrival', 'Description/ref',
+  'Unit price', 'Total', 'Supplier', 'Order date', 'Invoice #', 'Order #', 'Est. arrival', 'Description/ref',
 ]
 
 const esc = (v) => {
@@ -17,7 +17,8 @@ export function itemsToCsv(rows) {
     lines.push(
       [
         r.package, r.item, r.category, r.department, r.owner, r.status, r.qty,
-        r.unit_price, lineTotal(r), r.supplier, r.order_no, r.est_arrival || '', r.ref,
+        r.unit_price, lineTotal(r), r.supplier, r.order_date || '', r.invoice_no, r.order_no,
+        r.est_arrival || '', r.ref,
       ]
         .map(esc)
         .join(','),

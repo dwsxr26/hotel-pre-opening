@@ -1,9 +1,10 @@
 import { Calendar } from 'lucide-react'
 import { formatDate } from '../../lib/format'
 
-// Estimated arrival date. When no date is set the cell shows only the calendar
-// icon; the native date picker is layered invisibly over the icon button.
-export default function DateCell({ value, onEdit }) {
+// A date cell. When no date is set the cell shows only the calendar icon; the
+// native date picker is layered invisibly over the icon button. `field` is the
+// item column to patch (e.g. 'est_arrival' or 'order_date').
+export default function DateCell({ value, field, onEdit }) {
   const label = formatDate(value)
   return (
     <div className="date-cell">
@@ -13,7 +14,7 @@ export default function DateCell({ value, onEdit }) {
         <input
           type="date"
           value={value || ''}
-          onChange={(e) => onEdit({ est_arrival: e.target.value || null })}
+          onChange={(e) => onEdit({ [field]: e.target.value || null })}
         />
       </button>
     </div>

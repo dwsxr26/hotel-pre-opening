@@ -1,7 +1,7 @@
 import { supabase } from '../supabase'
 
 const COLUMNS =
-  'id, package, item, category, department, owner, status, qty, unit_price, supplier, order_no, est_arrival, ref, sort_index'
+  'id, package, item, category, department, owner, status, qty, unit_price, supplier, order_date, invoice_no, order_no, est_arrival, ref, sort_index'
 
 export async function fetchItems() {
   const { data, error } = await supabase
