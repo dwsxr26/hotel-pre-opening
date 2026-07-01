@@ -91,7 +91,7 @@ select.ctrl { appearance: none; cursor: pointer; padding-right: 26px;
   text-align: left; user-select: none;
 }
 .grid td { font-size: 13px; }
-.cell-pad { padding: 9px 10px; white-space: normal; overflow-wrap: anywhere; word-break: break-word; display: block; line-height: 1.35; }
+.cell-pad { padding: 9px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; line-height: 18px; }
 .grid tbody tr:hover td { background: var(--row-hover); }
 .num, .cell-num { text-align: right; font-variant-numeric: tabular-nums; }
 

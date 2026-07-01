@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   flexRender,
   getCoreRowModel,
@@ -6,6 +6,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowDown, ArrowUp, ChevronsUpDown, GripVertical } from 'lucide-react'
 import { DEFAULT_COLUMN_ORDER, PINNED_COLUMNS } from '../lib/constants'
 import { formatMoney, lineTotal } from '../lib/format'
@@ -259,7 +260,7 @@ export default function OrdersTable({
       columnPinning: { left: PINNED_COLUMNS },
       globalFilter: view.globalFilter,
     },
-    columnResizeMode: 'onEnd',
+    columnResizeMode: 'onChange',
     enableColumnResizing: true,
     globalFilterFn,
     onSortingChange: (u) => setView((p) => ({ sorting: typeof u === 'function' ? u(p.sorting) : u })),
@@ -276,6 +277,20 @@ export default function OrdersTable({
 
   const leafCols = table.getVisibleLeafColumns()
   const rows = table.getRowModel().rows
+
+  // Virtualize rows: only the ~visible rows are mounted, so sort/filter/resize/
+  // edit/scroll stay fast no matter how many line items there are.
+  const scrollRef = useRef(null)
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 37, // fixed single-line row height (36px + 1px border)
+    overscan: 12,
+  })
+  const virtualRows = rowVirtualizer.getVirtualItems()
+  const totalSize = rowVirtualizer.getTotalSize()
+  const padTop = virtualRows.length ? virtualRows[0].start : 0
+  const padBottom = virtualRows.length ? totalSize - virtualRows[virtualRows.length - 1].end : 0
 
   // Drag-to-reorder (non-pinned columns only). The two pinned columns stay first.
   const handleDrop = (targetId) => {
@@ -295,7 +310,7 @@ export default function OrdersTable({
   return (
     <>
       <div className="card overflow-hidden">
-        <div className="table-scroll">
+        <div className="table-scroll" ref={scrollRef}>
           <table className="grid">
             <colgroup>
               {leafCols.map((col) => (
@@ -327,7 +342,11 @@ export default function OrdersTable({
                             <span
                               className="th-grip"
                               draggable
-                              onDragStart={() => setDragCol(col.id)}
+                              onDragStart={(e) => {
+                                e.dataTransfer.effectAllowed = 'move'
+                                e.dataTransfer.setData('text/plain', col.id)
+                                setDragCol(col.id)
+                              }}
                               onDragEnd={() => setDragCol(null)}
                               title="Drag to reorder"
                             >
@@ -374,28 +393,41 @@ export default function OrdersTable({
               ))}
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  {row.getVisibleCells().map((cell) => {
-                    const col = cell.column
-                    const pinned = col.getIsPinned() === 'left'
-                    const isLastPinned = pinned && col.id === PINNED_COLUMNS[PINNED_COLUMNS.length - 1]
-                    const meta = col.columnDef.meta || {}
-                    const style = pinned ? { left: col.getStart('left'), zIndex: 6 } : undefined
-                    return (
-                      <td
-                        key={cell.id}
-                        className={`${pinned ? 'pinned' : ''} ${isLastPinned ? 'pinned-shadow' : ''} ${
-                          meta.align === 'num' ? 'cell-num' : ''
-                        }`}
-                        style={style}
-                      >
-                        {flexRender(col.columnDef.cell, cell.getContext())}
-                      </td>
-                    )
-                  })}
+              {padTop > 0 && (
+                <tr aria-hidden="true">
+                  <td colSpan={leafCols.length} style={{ height: padTop, padding: 0, border: 0 }} />
                 </tr>
-              ))}
+              )}
+              {virtualRows.map((vr) => {
+                const row = rows[vr.index]
+                return (
+                  <tr key={row.id}>
+                    {row.getVisibleCells().map((cell) => {
+                      const col = cell.column
+                      const pinned = col.getIsPinned() === 'left'
+                      const isLastPinned = pinned && col.id === PINNED_COLUMNS[PINNED_COLUMNS.length - 1]
+                      const meta = col.columnDef.meta || {}
+                      const style = pinned ? { left: col.getStart('left'), zIndex: 6 } : undefined
+                      return (
+                        <td
+                          key={cell.id}
+                          className={`${pinned ? 'pinned' : ''} ${isLastPinned ? 'pinned-shadow' : ''} ${
+                            meta.align === 'num' ? 'cell-num' : ''
+                          }`}
+                          style={style}
+                        >
+                          {flexRender(col.columnDef.cell, cell.getContext())}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })}
+              {padBottom > 0 && (
+                <tr aria-hidden="true">
+                  <td colSpan={leafCols.length} style={{ height: padBottom, padding: 0, border: 0 }} />
+                </tr>
+              )}
               {rows.length === 0 && (
                 <tr>
                   <td colSpan={leafCols.length} className="center-note">

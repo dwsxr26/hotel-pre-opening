@@ -73,7 +73,7 @@ export default function ConfirmEditCell({
   return (
     <span
       className={`cell-pad editable${shown ? '' : ' editable-empty'}${numeric ? ' cell-num' : ''}`}
-      title="Click to edit"
+      title={shown ? `${shown} — click to edit` : 'Click to edit'}
       onClick={begin}
     >
       {shown || emptyText || '—'}
