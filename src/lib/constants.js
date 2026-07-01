@@ -20,6 +20,16 @@ export const STATUS_COLOR = {
 // Page-size choices for the orders grid.
 export const PAGE_SIZES = [25, 50, 100]
 
+// Columns offered as multi-select filters in the Orders filter bar.
+export const FILTER_COLUMNS = [
+  ['package', 'Package'],
+  ['category', 'Category'],
+  ['department', 'Department'],
+  ['owner', 'Owner'],
+  ['status', 'Status'],
+  ['supplier', 'Supplier'],
+]
+
 // Column ids that require a confirmation dialog before an edit is committed.
 export const CONFIRM_EDIT_COLUMNS = new Set(['package', 'item', 'category', 'unit_price'])
 

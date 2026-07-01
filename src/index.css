@@ -195,6 +195,16 @@ input.cell-input.cell-num { text-align: right; }
 .filter-actions { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; }
 .filter-actions .btn { height: 28px; padding: 0 10px; font-size: 12px; }
 
+/* orders filter bar + multi-select control */
+.filterbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.filterbar-label { font-size: 12px; font-weight: 600; color: var(--muted-fg); }
+.msf { position: relative; display: inline-flex; }
+.msf-btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; font: inherit; font-size: 13px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: inherit; cursor: pointer; }
+.msf-btn:hover { background: hsl(240 4.8% 96%); }
+.msf-btn.active { border-color: var(--accent); color: var(--accent); background: hsl(200 25% 97%); }
+.msf-count { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; }
+.msf .filter-pop { left: 0; right: auto; }
+
 /* bulk edit bar */
 .bulkbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; margin-bottom: 12px; border: 1px solid hsl(200 30% 70%); border-radius: 10px; background: hsl(200 40% 97%); position: sticky; top: 8px; z-index: 15; }
 .bulkbar-lead { display: flex; align-items: center; gap: 10px; font-size: 13px; }

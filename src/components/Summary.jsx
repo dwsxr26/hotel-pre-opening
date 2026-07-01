@@ -5,6 +5,7 @@ import { DEPARTMENTS } from '../lib/departments'
 import { formatInt, formatMoney, lineTotal } from '../lib/format'
 import StatusBars from './StatusBars'
 import FilterPopover from './FilterPopover'
+import MultiSelectFilter from './MultiSelectFilter'
 
 // Reusable "summary by <field>" view. Used for both Owner and Supplier
 // (groupKey = 'owner' | 'supplier'). Counts are line items, not quantities.
@@ -14,8 +15,8 @@ export default function Summary({ items, groupKey, groupLabel, blankLabel }) {
   const [selected, setSelected] = useState('__all')
   const [sort, setSort] = useState({ key: 'value', dir: 'desc' })
   const [query, setQuery] = useState('')
-  const [deptFilter, setDeptFilter] = useState('__all')
-  const [statusFilter, setStatusFilter] = useState('__all')
+  const [deptFilter, setDeptFilter] = useState([]) // multi-select
+  const [statusFilter, setStatusFilter] = useState([]) // multi-select
   const [pick, setPick] = useState(undefined) // multi-select of group values to list
 
   // Department / status filters scope the whole summary (totals, bars, table).
@@ -23,8 +24,8 @@ export default function Summary({ items, groupKey, groupLabel, blankLabel }) {
     () =>
       items.filter(
         (r) =>
-          (deptFilter === '__all' || r.department === deptFilter) &&
-          (statusFilter === '__all' || r.status === statusFilter),
+          (deptFilter.length === 0 || deptFilter.includes(r.department)) &&
+          (statusFilter.length === 0 || statusFilter.includes(r.status)),
       ),
     [items, deptFilter, statusFilter],
   )
@@ -98,32 +99,15 @@ export default function Summary({ items, groupKey, groupLabel, blankLabel }) {
           ))}
         </select>
 
-        <label style={{ fontSize: 13, fontWeight: 500 }}>Department</label>
-        <select className="ctrl" value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)}>
-          <option value="__all">All departments</option>
-          {DEPARTMENTS.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
+        <MultiSelectFilter label="Department" options={DEPARTMENTS} selected={deptFilter} onChange={setDeptFilter} />
+        <MultiSelectFilter label="Status" options={STATUSES} selected={statusFilter} onChange={setStatusFilter} />
 
-        <label style={{ fontSize: 13, fontWeight: 500 }}>Status</label>
-        <select className="ctrl" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="__all">All statuses</option>
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-
-        {(deptFilter !== '__all' || statusFilter !== '__all') && (
+        {(deptFilter.length > 0 || statusFilter.length > 0) && (
           <button
             className="btn"
             onClick={() => {
-              setDeptFilter('__all')
-              setStatusFilter('__all')
+              setDeptFilter([])
+              setStatusFilter([])
             }}
           >
             Clear filters

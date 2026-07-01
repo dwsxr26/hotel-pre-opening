@@ -12,12 +12,12 @@ import {
   ArrowDown, ArrowUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight,
   Download, GripVertical,
 } from 'lucide-react'
-import { DEFAULT_COLUMN_ORDER, PAGE_SIZES, PINNED_COLUMNS } from '../lib/constants'
+import { DEFAULT_COLUMN_ORDER, FILTER_COLUMNS, PAGE_SIZES, PINNED_COLUMNS } from '../lib/constants'
 import { downloadCsv, itemsToCsv } from '../lib/csv'
 import StatusBars from './StatusBars'
 import BulkEditBar from './BulkEditBar'
+import MultiSelectFilter from './MultiSelectFilter'
 import { formatMoney, lineTotal } from '../lib/format'
-import FilterPopover from './FilterPopover'
 import ConfirmModal from './ConfirmModal'
 import ConfirmEditCell from './cells/ConfirmEditCell'
 import CategoryCell from './cells/CategoryCell'
@@ -479,6 +479,24 @@ export default function OrdersTable({
         )}
       </div>
 
+      <div className="filterbar">
+        <span className="filterbar-label">Filter</span>
+        {FILTER_COLUMNS.map(([id, label]) => (
+          <MultiSelectFilter
+            key={id}
+            label={label}
+            options={uniqueValues[id]}
+            selected={table.getColumn(id)?.getFilterValue()?.values ?? []}
+            onChange={(vals) => setColumnFilter(id, vals.length ? { type: 'set', values: vals } : undefined)}
+          />
+        ))}
+        {FILTER_COLUMNS.some(([id]) => table.getColumn(id)?.getFilterValue()?.values?.length) && (
+          <button className="linkbtn" onClick={() => FILTER_COLUMNS.forEach(([id]) => setColumnFilter(id, undefined))}>
+            Clear filters
+          </button>
+        )}
+      </div>
+
       {selected.size > 0 && (
         <BulkEditBar
           count={selected.size}
@@ -572,14 +590,6 @@ export default function OrdersTable({
                               <ChevronsUpDown size={12} opacity={0.4} />
                             )}
                           </span>
-                          {meta.filter && meta.filter !== 'none' && (
-                            <FilterPopover
-                              mode={meta.filter}
-                              uniqueValues={uniqueValues[col.id]}
-                              value={col.getFilterValue()}
-                              onChange={(v) => setColumnFilter(col.id, v)}
-                            />
-                          )}
                         </div>
                         {col.getCanResize() && (
                           <span
