@@ -4,7 +4,7 @@ import { useAuth } from './hooks/useAuth'
 import { useViewPrefs } from './hooks/useViewPrefs'
 import { fetchItems, subscribeItems, updateItem } from './data/items'
 import { addCategory, fetchCategories } from './data/categories'
-import { ensureMyProfile, fetchProfiles, updateMyProfile } from './data/profiles'
+import { ensureMyProfile, fetchProfiles, setMyPassword, updateMyProfile } from './data/profiles'
 import { DEFAULT_COLUMN_ORDER } from './lib/constants'
 import { displayName } from './lib/people'
 import Auth from './components/Auth'
@@ -64,7 +64,8 @@ export default function App() {
       .then((mine) => {
         if (!active || !mine) return
         setMyProfile(mine)
-        if (!mine.first_name) setShowProfile(true)
+        // Prompt until they've set both a name and a password.
+        if (!mine.first_name || !mine.password_set) setShowProfile(true)
       })
       .catch((err) => console.error('Profile load failed', err))
     const unsub = subscribeItems(() => load())
@@ -113,16 +114,17 @@ export default function App() {
     return created
   }, [])
 
-  const onSaveProfile = useCallback(async ({ first_name, last_name }) => {
-    const updated = await updateMyProfile({ first_name, last_name })
-    if (updated) {
-      setMyProfile(updated)
+  const onSaveProfile = useCallback(async ({ first_name, last_name, password }) => {
+    let saved = await updateMyProfile({ first_name, last_name })
+    if (password) saved = await setMyPassword(password)
+    if (saved) {
+      setMyProfile(saved)
       setProfiles((cur) => {
-        const rest = cur.filter((p) => p.user_id !== updated.user_id)
-        return [...rest, updated].sort((a, b) => (a.first_name || '').localeCompare(b.first_name || ''))
+        const rest = cur.filter((p) => p.user_id !== saved.user_id)
+        return [...rest, saved].sort((a, b) => (a.first_name || '').localeCompare(b.first_name || ''))
       })
     }
-    return updated
+    return saved
   }, [])
 
   if (authLoading) return <div className="center-note">Loading…</div>
@@ -192,7 +194,8 @@ export default function App() {
       {showProfile && (
         <ProfileModal
           profile={myProfile}
-          required={!myProfile?.first_name}
+          required={!myProfile?.first_name || !myProfile?.password_set}
+          passwordSet={!!myProfile?.password_set}
           onSave={onSaveProfile}
           onClose={() => setShowProfile(false)}
         />

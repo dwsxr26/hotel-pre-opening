@@ -1,23 +1,40 @@
 import { useState } from 'react'
 import { displayName } from '../lib/people'
 
-// Lets the signed-in user set their first and last name. The Owner dropdown
-// shows everyone as "First L." (built from these). `required` hides the cancel
-// button for the first-time prompt.
-export default function ProfileModal({ profile, required = false, onSave, onClose }) {
+// Collects the signed-in user's name and (for new users) a password.
+//  - required: can't be dismissed (used to complete onboarding).
+//  - passwordSet: whether the user already has a password. If not, a password
+//    is required here; if so, the password fields are an optional change.
+// Calls onSave({ first_name, last_name, password }) where password === ''
+// means "leave the current password unchanged".
+export default function ProfileModal({ profile, required = false, passwordSet = false, onSave, onClose }) {
   const [first, setFirst] = useState(profile?.first_name || '')
   const [last, setLast] = useState(profile?.last_name || '')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
+  const mustSetPassword = !passwordSet
   const preview = displayName({ first_name: first, last_name: last, email: profile?.email })
 
   const save = async (e) => {
     e.preventDefault()
-    if (!first.trim()) return
+    setError('')
+    if (!first.trim()) return setError('Please enter your first name.')
+
+    const wantsPassword = mustSetPassword || password || confirm
+    if (wantsPassword) {
+      if (password.length < 8) return setError('Password must be at least 8 characters.')
+      if (password !== confirm) return setError('Passwords do not match.')
+    }
+
     setSaving(true)
     try {
-      await onSave({ first_name: first, last_name: last })
+      await onSave({ first_name: first, last_name: last, password: wantsPassword ? password : '' })
       onClose()
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -26,9 +43,10 @@ export default function ProfileModal({ profile, required = false, onSave, onClos
   return (
     <div className="modal-backdrop" onMouseDown={() => !required && onClose()}>
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
-        <h3>Your name</h3>
+        <h3>{mustSetPassword ? 'Finish setting up your account' : 'Your account'}</h3>
         <p>
-          This is how you appear in the Owner dropdown. {profile?.email && <span>Linked to {profile.email}.</span>}
+          Set how you appear in the Owner dropdown{mustSetPassword ? ' and choose a password' : ''}.
+          {profile?.email && <span> Linked to {profile.email}.</span>}
         </p>
         <form onSubmit={save}>
           <div className="field">
@@ -39,9 +57,29 @@ export default function ProfileModal({ profile, required = false, onSave, onClos
             <label htmlFor="last">Last name</label>
             <input id="last" value={last} onChange={(e) => setLast(e.target.value)} placeholder="Scholten" />
           </div>
-          <p className="from-to" style={{ marginBottom: 14 }}>
+
+          <div className="field">
+            <label htmlFor="pw">{mustSetPassword ? 'Password' : 'New password (optional)'}</label>
+            <input
+              id="pw"
+              type="password"
+              value={password}
+              placeholder={mustSetPassword ? 'At least 8 characters' : 'Leave blank to keep current'}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          {(mustSetPassword || password) && (
+            <div className="field">
+              <label htmlFor="pw2">Confirm password</label>
+              <input id="pw2" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+            </div>
+          )}
+
+          <p className="from-to" style={{ marginBottom: 12 }}>
             Shown as <span className="new">{preview || '—'}</span>
           </p>
+          {error && <p className="auth-msg error" style={{ marginTop: 0 }}>{error}</p>}
+
           <div className="modal-actions">
             {!required && (
               <button type="button" className="btn" onClick={onClose}>
@@ -49,7 +87,7 @@ export default function ProfileModal({ profile, required = false, onSave, onClos
               </button>
             )}
             <button className="btn btn-primary" disabled={saving || !first.trim()}>
-              {saving ? 'Saving…' : 'Save name'}
+              {saving ? 'Saving…' : mustSetPassword ? 'Save & continue' : 'Save'}
             </button>
           </div>
         </form>

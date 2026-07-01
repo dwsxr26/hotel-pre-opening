@@ -90,6 +90,9 @@ export default function Auth() {
             Email me a sign-in link
           </button>
 
+          <p className="hint" style={{ marginTop: 12, textAlign: 'center' }}>
+            First time here? Use the sign-in link — you'll set a password right after.
+          </p>
           {status && <p className={`auth-msg ${status.ok ? 'ok' : 'error'}`}>{status.text}</p>}
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { supabase } from '../supabase'
 
-const COLUMNS = 'user_id, email, first_name, last_name'
+const COLUMNS = 'user_id, email, first_name, last_name, password_set'
 
 export async function fetchProfiles() {
   const { data, error } = await supabase
@@ -43,5 +43,21 @@ export async function updateMyProfile({ first_name, last_name }) {
     .select(COLUMNS)
     .single()
   if (error) throw error
+  return data
+}
+
+// Set the signed-in user's password (works because they already have a session
+// from the magic link) and record that they've set one.
+export async function setMyPassword(password) {
+  const { error } = await supabase.auth.updateUser({ password })
+  if (error) throw error
+  const { data: userData } = await supabase.auth.getUser()
+  const { data, error: e2 } = await supabase
+    .from('profiles')
+    .update({ password_set: true })
+    .eq('user_id', userData.user.id)
+    .select(COLUMNS)
+    .single()
+  if (e2) throw e2
   return data
 }
