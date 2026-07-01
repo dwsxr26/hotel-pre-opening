@@ -4,6 +4,7 @@ import { STATUSES } from '../lib/constants'
 import { DEPARTMENTS } from '../lib/departments'
 import { formatInt, formatMoney, lineTotal } from '../lib/format'
 import StatusBars from './StatusBars'
+import FilterPopover from './FilterPopover'
 
 // Reusable "summary by <field>" view. Used for both Owner and Supplier
 // (groupKey = 'owner' | 'supplier'). Counts are line items, not quantities.
@@ -15,6 +16,7 @@ export default function Summary({ items, groupKey, groupLabel, blankLabel }) {
   const [query, setQuery] = useState('')
   const [deptFilter, setDeptFilter] = useState('__all')
   const [statusFilter, setStatusFilter] = useState('__all')
+  const [pick, setPick] = useState(undefined) // multi-select of group values to list
 
   // Department / status filters scope the whole summary (totals, bars, table).
   const scoped = useMemo(
@@ -51,7 +53,9 @@ export default function Summary({ items, groupKey, groupLabel, blankLabel }) {
   const tableRows = useMemo(() => {
     const rows = groups.map((g) => ({ key: g, name: nameOf(g), ...statsOf(rowsFor(g)) }))
     const q = query.trim().toLowerCase()
-    const filtered = q ? rows.filter((r) => r.name.toLowerCase().includes(q)) : rows
+    let filtered = rows
+    if (pick?.values?.length) filtered = filtered.filter((r) => pick.values.includes(r.key))
+    if (q) filtered = filtered.filter((r) => r.name.toLowerCase().includes(q))
     const dir = sort.dir === 'asc' ? 1 : -1
     const val = (r) => {
       if (sort.key === 'name') return r.name.toLowerCase()
@@ -67,7 +71,7 @@ export default function Summary({ items, groupKey, groupLabel, blankLabel }) {
       return 0
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groups, scoped, query, sort])
+  }, [groups, scoped, query, sort, pick])
 
   const toggleSort = (key) =>
     setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }))
@@ -155,10 +159,16 @@ export default function Summary({ items, groupKey, groupLabel, blankLabel }) {
           <span className="card-hd" style={{ padding: 0, border: 0 }}>
             All {groupLabel.toLowerCase()}s at a glance
           </span>
-          <span className="ctrl summary-search">
-            <Search size={14} color="#6b7280" />
-            <input placeholder={`Filter ${groupLabel.toLowerCase()}…`} value={query} onChange={(e) => setQuery(e.target.value)} />
-          </span>
+          <div className="summary-table-tools">
+            <span className="summary-pick">
+              Pick {groupLabel.toLowerCase()}s
+              <FilterPopover mode="set" uniqueValues={groups} value={pick} onChange={setPick} />
+            </span>
+            <span className="ctrl summary-search">
+              <Search size={14} color="#6b7280" />
+              <input placeholder={`Search ${groupLabel.toLowerCase()}…`} value={query} onChange={(e) => setQuery(e.target.value)} />
+            </span>
+          </div>
         </div>
         <div className="summary-table-scroll">
           <table className="summary-table">

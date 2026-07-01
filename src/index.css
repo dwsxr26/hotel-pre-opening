@@ -212,8 +212,10 @@ input.cell-input.cell-num { text-align: right; }
 .summary-table th.num .th-sortwrap { flex-direction: row-reverse; }
 .summary-table-scroll { max-height: calc(100vh - 430px); overflow: auto; }
 .summary-table-hd { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-.summary-search { display: inline-flex; align-items: center; gap: 6px; width: 220px; }
+.summary-search { display: inline-flex; align-items: center; gap: 6px; width: 200px; }
 .summary-search input { border: 0; outline: none; font: inherit; width: 100%; background: transparent; }
+.summary-table-tools { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.summary-pick { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted-fg); font-weight: 500; }
 
 /* status bars (line items by status) */
 .statusbars-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px 20px; }
