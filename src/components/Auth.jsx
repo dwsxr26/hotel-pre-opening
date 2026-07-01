@@ -1,22 +1,36 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
 
-// Magic-link sign in — the team enters their email and receives a login link.
-// No passwords to manage. (Enable "Email" provider in Supabase Auth settings.)
+// Sign in with either a password or a magic link. Both use the Supabase "Email"
+// provider; enable it under Authentication settings.
 export default function Auth() {
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [status, setStatus] = useState(null) // {ok, text}
-  const [sending, setSending] = useState(false)
+  const [busy, setBusy] = useState(false)
 
-  const submit = async (e) => {
+  const signInPassword = async (e) => {
     e.preventDefault()
-    setSending(true)
+    setBusy(true)
+    setStatus(null)
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    })
+    setBusy(false)
+    // On success the auth listener swaps this screen out; only errors surface here.
+    if (error) setStatus({ ok: false, text: error.message })
+  }
+
+  const sendMagicLink = async () => {
+    if (!email.trim()) return setStatus({ ok: false, text: 'Enter your email first.' })
+    setBusy(true)
     setStatus(null)
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: { emailRedirectTo: window.location.origin },
     })
-    setSending(false)
+    setBusy(false)
     if (error) setStatus({ ok: false, text: error.message })
     else setStatus({ ok: true, text: 'Check your inbox for a sign-in link.' })
   }
@@ -32,22 +46,50 @@ export default function Auth() {
           <p className="subtitle">Sign in to view and update the order tracker.</p>
         </div>
         <div className="card">
-          <form onSubmit={submit}>
+          <form onSubmit={signInPassword}>
             <div className="field">
               <label htmlFor="email">Work email</label>
               <input
                 id="email"
                 type="email"
                 required
-                placeholder="you@crossroadsre.com"
+                placeholder="yourname@mail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
-            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={sending}>
-              {sending ? 'Sending…' : 'Send sign-in link'}
+            <div className="field">
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <button
+              className="btn btn-primary"
+              style={{ width: '100%', justifyContent: 'center' }}
+              disabled={busy}
+            >
+              {busy ? 'Working…' : 'Sign in'}
             </button>
           </form>
+
+          <div className="auth-divider">
+            <span>or</span>
+          </div>
+
+          <button
+            className="btn"
+            style={{ width: '100%', justifyContent: 'center' }}
+            disabled={busy}
+            onClick={sendMagicLink}
+          >
+            Email me a sign-in link
+          </button>
+
           {status && <p className={`auth-msg ${status.ok ? 'ok' : 'error'}`}>{status.text}</p>}
         </div>
       </div>

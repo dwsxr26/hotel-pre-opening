@@ -210,4 +210,7 @@ th.drop-target .th-inner { background: hsl(200 25% 96%); }
 .auth-msg.error { color: hsl(0 60% 45%); }
 .auth-msg.ok { color: hsl(140 40% 35%); }
 
+.auth-divider { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: var(--muted-fg); font-size: 12px; }
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
 .center-note { text-align: center; color: var(--muted-fg); font-size: 14px; padding: 48px; }
