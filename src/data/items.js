@@ -24,6 +24,17 @@ export async function updateItem(id, patch) {
   return data
 }
 
+// Apply the same patch to many items at once (bulk edit).
+export async function updateItems(ids, patch) {
+  const { data, error } = await supabase
+    .from('items')
+    .update(patch)
+    .in('id', ids)
+    .select(COLUMNS)
+  if (error) throw error
+  return data ?? []
+}
+
 // Subscribe to changes made by other team members. Returns an unsubscribe fn.
 export function subscribeItems(onChange) {
   const channel = supabase

@@ -15,6 +15,7 @@ import {
 import { DEFAULT_COLUMN_ORDER, PAGE_SIZES, PINNED_COLUMNS } from '../lib/constants'
 import { downloadCsv, itemsToCsv } from '../lib/csv'
 import StatusBars from './StatusBars'
+import BulkEditBar from './BulkEditBar'
 import { formatMoney, lineTotal } from '../lib/format'
 import FilterPopover from './FilterPopover'
 import ConfirmModal from './ConfirmModal'
@@ -57,9 +58,12 @@ export default function OrdersTable({
   view,
   setView,
   onEdit,
+  onBulkEdit,
   onAddCategory,
 }) {
   const [pending, setPending] = useState(null) // {id, patch, meta}
+  const [bulkPending, setBulkPending] = useState(null) // {ids, patch, summary}
+  const [selected, setSelected] = useState(() => new Set()) // selected item ids
   const [dragCol, setDragCol] = useState(null) // column being dragged
   const [dragOverCol, setDragOverCol] = useState(null) // column currently under the cursor
 
@@ -333,7 +337,51 @@ export default function OrdersTable({
   // is memoized, widths come from the variables).
   const pkgWidth = table.getColumn('package')?.getSize() ?? 0
   const itemWidth = table.getColumn('item')?.getSize() ?? 0
-  const pinVars = { '--pkg-w': `${pkgWidth}px`, '--item-w': `${itemWidth}px`, '--pin-item-left': `${pkgWidth}px` }
+  const pinVars = { '--sel-w': '42px', '--pkg-w': `${pkgWidth}px`, '--item-w': `${itemWidth}px` }
+
+  // Row selection (by id, so it survives paging and filtering).
+  const pageIds = rows.map((r) => r.original.id)
+  const filteredIds = filteredRows.map((r) => r.original.id)
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id))
+  const somePageSelected = pageIds.some((id) => selected.has(id))
+  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selected.has(id))
+
+  const toggleRow = (id) =>
+    setSelected((prev) => {
+      const n = new Set(prev)
+      if (n.has(id)) n.delete(id)
+      else n.add(id)
+      return n
+    })
+  const toggleAllPage = () =>
+    setSelected((prev) => {
+      const n = new Set(prev)
+      if (allPageSelected) pageIds.forEach((id) => n.delete(id))
+      else pageIds.forEach((id) => n.add(id))
+      return n
+    })
+  const selectAllFiltered = () =>
+    setSelected((prev) => {
+      const n = new Set(prev)
+      filteredIds.forEach((id) => n.add(id))
+      return n
+    })
+  const clearSelection = () => setSelected(new Set())
+
+  // Bulk edit: build a human summary + real patch, then confirm.
+  const FIELD_LABELS = {
+    category: 'Category', owner: 'Owner', department: 'Department', status: 'Status',
+    supplier: 'Supplier', order_date: 'Order date', est_arrival: 'Est. arrival',
+  }
+  const applyBulk = (patch) => {
+    const real = { ...patch }
+    if (real.owner === '__unassign') real.owner = ''
+    const summary = Object.entries(patch)
+      .map(([k, v]) => `${FIELD_LABELS[k]} → ${v === '__unassign' ? 'Unassigned' : v}`)
+      .join(', ')
+    const ids = [...selected]
+    setBulkPending({ ids, patch: real, summary })
+  }
 
   // Drag-to-reorder (non-pinned columns only). The two pinned columns stay first.
   const clearDrag = () => {
@@ -373,8 +421,12 @@ export default function OrdersTable({
     () =>
       virtualRows.map((vr) => {
         const row = rows[vr.index]
+        const isSel = selected.has(row.original.id)
         return (
-          <tr key={row.id}>
+          <tr key={row.id} className={isSel ? 'row-selected' : ''}>
+            <td className="pinned pin-select select-cell">
+              <input type="checkbox" checked={isSel} onChange={() => toggleRow(row.original.id)} />
+            </td>
             {row.getVisibleCells().map((cell) => {
               const col = cell.column
               const meta = col.columnDef.meta || {}
@@ -396,7 +448,7 @@ export default function OrdersTable({
         )
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rows, view.columnOrder, columns, rangeKey, padTop, padBottom],
+    [rows, view.columnOrder, columns, rangeKey, padTop, padBottom, selected],
   )
 
   const rowsData = useMemo(() => filteredRows.map((r) => r.original), [filteredRows])
@@ -427,6 +479,20 @@ export default function OrdersTable({
         )}
       </div>
 
+      {selected.size > 0 && (
+        <BulkEditBar
+          count={selected.size}
+          filteredCount={filteredRows.length}
+          allFilteredSelected={allFilteredSelected}
+          categories={categories}
+          people={people}
+          suppliers={suppliers}
+          onApply={applyBulk}
+          onClear={clearSelection}
+          onSelectAllFiltered={selectAllFiltered}
+        />
+      )}
+
       {missingCount > 0 && (
         <div className="warn-banner">
           ⚠ {missingCount} “Order placed” {missingCount === 1 ? 'item is' : 'items are'} missing an Invoice # or Order #.
@@ -437,6 +503,7 @@ export default function OrdersTable({
         <div className="table-scroll" ref={scrollRef}>
           <table className="grid" style={pinVars}>
             <colgroup>
+              <col style={{ width: 42 }} />
               {leafCols.map((col) => (
                 <col key={col.id} style={{ width: col.getSize() }} />
               ))}
@@ -444,6 +511,15 @@ export default function OrdersTable({
             <thead>
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
+                  <th className="pinned pin-select select-cell">
+                    <input
+                      type="checkbox"
+                      checked={allPageSelected}
+                      ref={(el) => el && (el.indeterminate = !allPageSelected && somePageSelected)}
+                      onChange={toggleAllPage}
+                      title="Select all on this page"
+                    />
+                  </th>
                   {hg.headers.map((header) => {
                     const col = header.column
                     const pinned = col.getIsPinned() === 'left'
@@ -522,18 +598,18 @@ export default function OrdersTable({
             <tbody>
               {padTop > 0 && (
                 <tr aria-hidden="true">
-                  <td colSpan={leafCols.length} style={{ height: padTop, padding: 0, border: 0 }} />
+                  <td colSpan={leafCols.length + 1} style={{ height: padTop, padding: 0, border: 0 }} />
                 </tr>
               )}
               {bodyRows}
               {padBottom > 0 && (
                 <tr aria-hidden="true">
-                  <td colSpan={leafCols.length} style={{ height: padBottom, padding: 0, border: 0 }} />
+                  <td colSpan={leafCols.length + 1} style={{ height: padBottom, padding: 0, border: 0 }} />
                 </tr>
               )}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={leafCols.length} className="center-note">
+                  <td colSpan={leafCols.length + 1} className="center-note">
                     No items match the current filters.
                   </td>
                 </tr>
@@ -598,6 +674,19 @@ export default function OrdersTable({
         onConfirm={() => {
           onEdit(pending.id, pending.patch)
           setPending(null)
+        }}
+      />
+
+      <ConfirmModal
+        open={!!bulkPending}
+        title={`Update ${bulkPending?.ids.length} item${bulkPending?.ids.length === 1 ? '' : 's'}?`}
+        message={bulkPending ? `Set ${bulkPending.summary}.` : ''}
+        confirmLabel="Apply changes"
+        onCancel={() => setBulkPending(null)}
+        onConfirm={() => {
+          onBulkEdit(bulkPending.ids, bulkPending.patch)
+          setBulkPending(null)
+          clearSelection()
         }}
       />
     </>

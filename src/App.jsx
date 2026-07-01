@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
 import { useAuth } from './hooks/useAuth'
 import { useViewPrefs } from './hooks/useViewPrefs'
-import { fetchItems, subscribeItems, updateItem } from './data/items'
+import { fetchItems, subscribeItems, updateItem, updateItems } from './data/items'
 import { addCategory, fetchCategories } from './data/categories'
 import { ensureMyProfile, fetchProfiles, setMyPassword, updateMyProfile } from './data/profiles'
 import { DEFAULT_COLUMN_ORDER } from './lib/constants'
@@ -108,6 +108,23 @@ export default function App() {
     }
   }, [])
 
+  // Bulk edit: apply the same patch to many items. Optimistic, revert on error.
+  const onBulkEdit = useCallback(async (ids, patch) => {
+    const idSet = new Set(ids)
+    let prev
+    setItems((cur) => {
+      prev = cur
+      return cur.map((r) => (idSet.has(r.id) ? { ...r, ...patch } : r))
+    })
+    try {
+      await updateItems(ids, patch)
+    } catch (err) {
+      console.error('Bulk update failed', err)
+      if (prev) setItems(prev)
+      alert('Could not apply the bulk change. Please try again.')
+    }
+  }, [])
+
   const onAddCategory = useCallback(async (name) => {
     const created = await addCategory(name)
     if (created) setCategories((cur) => (cur.includes(created.name) ? cur : [...cur, created.name].sort()))
@@ -182,6 +199,7 @@ export default function App() {
             view={view}
             setView={setView}
             onEdit={onEdit}
+            onBulkEdit={onBulkEdit}
             onAddCategory={onAddCategory}
           />
         </>
