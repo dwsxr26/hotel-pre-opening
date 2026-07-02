@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Search } from 'lucide-react'
 import { useAuth } from './hooks/useAuth'
 import { useViewPrefs } from './hooks/useViewPrefs'
-import { fetchItems, subscribeItems, updateItem, updateItems } from './data/items'
+import { addItem, fetchItems, subscribeItems, updateItem, updateItems } from './data/items'
+import { filterItems } from './lib/filtering'
 import { addCategory, fetchCategories } from './data/categories'
 import { ensureMyProfile, fetchProfiles, setMyPassword, updateMyProfile } from './data/profiles'
 import { fetchAttachments, removeLink, signedUrl, uploadFiles } from './data/attachments'
@@ -89,6 +90,12 @@ export default function App() {
   const suppliers = useMemo(
     () => [...new Set(items.map((i) => i.supplier).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
     [items],
+  )
+
+  // Items after the Orders filter/search — used to keep the Metrics panel in sync.
+  const filteredItems = useMemo(
+    () => filterItems(items, view.columnFilters, view.globalFilter),
+    [items, view.columnFilters, view.globalFilter],
   )
 
   // Keep a live ref of items so edits can capture previous values synchronously
@@ -217,6 +224,24 @@ export default function App() {
     }
   }, [])
 
+  // Add a new blank line item at the top of the list.
+  const onAddItem = useCallback(async () => {
+    const minIdx = itemsRef.current.reduce((m, r) => Math.min(m, r.sort_index ?? 0), 0)
+    const blank = {
+      package: '', item: 'New item', category: '', department: 'OS&E', owner: '', status: 'Not ordered',
+      qty: 0, unit_price: 0, supplier: '', order_date: null, invoice_no: '', order_no: '', est_arrival: null,
+      ref: '', sort_index: minIdx - 1,
+    }
+    try {
+      const created = await addItem(blank)
+      setItems((cur) => [created, ...cur])
+      setView({ pagination: { pageIndex: 0, pageSize: view.pagination?.pageSize || 50 } })
+    } catch (err) {
+      console.error('Add item failed', err)
+      alert('Could not add a new item. Please try again.')
+    }
+  }, [setView, view.pagination])
+
   const onAddCategory = useCallback(async (name) => {
     const created = await addCategory(name)
     if (created) setCategories((cur) => (cur.includes(created.name) ? cur : [...cur, created.name].sort()))
@@ -248,7 +273,7 @@ export default function App() {
         onInvite={() => setShowInvite(true)}
       />
       <Metrics
-        items={items}
+        items={filteredItems}
         open={view.metricsOpen === true}
         onToggle={() => setView({ metricsOpen: !(view.metricsOpen === true) })}
       />
@@ -296,6 +321,7 @@ export default function App() {
             setView={setView}
             onEdit={onEdit}
             onBulkEdit={onBulkEdit}
+            onAddItem={onAddItem}
             onAddCategory={onAddCategory}
             onUndo={undo}
             canUndo={undoCount > 0}

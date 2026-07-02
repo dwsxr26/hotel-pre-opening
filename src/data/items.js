@@ -24,6 +24,13 @@ export async function updateItem(id, patch) {
   return data
 }
 
+// Insert a new (blank) line item.
+export async function addItem(patch) {
+  const { data, error } = await supabase.from('items').insert(patch).select(COLUMNS).single()
+  if (error) throw error
+  return data
+}
+
 // Apply the same patch to many items at once (bulk edit).
 export async function updateItems(ids, patch) {
   const { data, error } = await supabase

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   flexRender,
   getCoreRowModel,
@@ -7,7 +7,6 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   ArrowDown, ArrowUp, ChevronsUpDown, ChevronLeft, ChevronRight,
   Download, GripVertical, Minus, Plus, RotateCcw,
@@ -59,6 +58,7 @@ export default function OrdersTable({
   setView,
   onEdit,
   onBulkEdit,
+  onAddItem,
   onAddCategory,
   onUndo,
   canUndo,
@@ -337,21 +337,7 @@ export default function OrdersTable({
 
   const leafCols = table.getVisibleLeafColumns()
   const filteredRows = table.getFilteredRowModel().rows // all matching rows (across pages)
-  const rows = table.getRowModel().rows // just the current page
-
-  // Virtualize rows: only the ~visible rows are mounted, so sort/filter/resize/
-  // edit/scroll stay fast no matter how many line items there are.
-  const scrollRef = useRef(null)
-  const rowVirtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => 37, // fixed single-line row height (36px + 1px border)
-    overscan: 12,
-  })
-  const virtualRows = rowVirtualizer.getVirtualItems()
-  const totalSize = rowVirtualizer.getTotalSize()
-  const padTop = virtualRows.length ? virtualRows[0].start : 0
-  const padBottom = virtualRows.length ? totalSize - virtualRows[virtualRows.length - 1].end : 0
+  const rows = table.getRowModel().rows // just the current page (pagination caps this)
 
   // Pinned columns are position:sticky, and sticky cells don't reliably adopt
   // <colgroup> widths in a fixed-layout table. So we drive BOTH their width and
@@ -437,18 +423,17 @@ export default function OrdersTable({
   const setColumnFilter = (columnId, value) => table.getColumn(columnId)?.setFilterValue(value)
 
   // The rendered rows are memoized on what actually changes their content
-  // (data, sort/filter -> `rows`; reorder -> `columnOrder`; scroll -> `rangeKey`;
-  // dropdown sources -> `columns`). Column *sizing* is deliberately excluded, so
-  // dragging a resizer only updates the <colgroup> widths and the pinned-left CSS
-  // variable — the row cells are not re-rendered at all.
-  const rangeKey = virtualRows.length
-    ? `${virtualRows[0].index}-${virtualRows[virtualRows.length - 1].index}`
-    : 'empty'
+  // (data/sort/filter/page -> `rows`; reorder -> `columnOrder`; selection;
+  // dropdown sources & attachments -> `columns`/`attachmentsByItem`). Column
+  // *sizing* is deliberately excluded, so resizing only updates the <colgroup>
+  // widths + pinned-left CSS variables — rows are not re-rendered.
   const bodyRows = useMemo(
     () =>
-      virtualRows.map((vr) => {
-        const row = rows[vr.index]
+      rows.map((row) => {
         const isSel = selected.has(row.original.id)
+        // Any status other than "Not ordered" needs invoice #, order # and a file.
+        const needsInfo = row.original.status !== 'Not ordered'
+        const files = attachmentsByItem[row.original.id]
         return (
           <tr key={row.id} className={isSel ? 'row-selected' : ''}>
             <td className="pinned pin-select select-cell">
@@ -457,11 +442,11 @@ export default function OrdersTable({
             {row.getVisibleCells().map((cell) => {
               const col = cell.column
               const meta = col.columnDef.meta || {}
-              // Amber-flag missing Invoice #/Order # on "Order placed" rows.
               const req =
-                (col.id === 'invoice_no' || col.id === 'order_no') &&
-                row.original.status === 'Order placed' &&
-                !row.original[col.id]
+                needsInfo &&
+                ((col.id === 'invoice_no' && !row.original.invoice_no) ||
+                  (col.id === 'order_no' && !row.original.order_no) ||
+                  (col.id === 'files' && !(files && files.length)))
               return (
                 <td
                   key={cell.id}
@@ -475,7 +460,7 @@ export default function OrdersTable({
         )
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rows, view.columnOrder, columns, rangeKey, padTop, padBottom, selected],
+    [rows, view.columnOrder, columns, selected, attachmentsByItem],
   )
 
   const rowsData = useMemo(() => filteredRows.map((r) => r.original), [filteredRows])
@@ -487,12 +472,15 @@ export default function OrdersTable({
 
   const exportCsv = () => downloadCsv('florence-pre-opening.csv', itemsToCsv(rowsData))
   const missingCount = rowsData.filter(
-    (r) => r.status === 'Order placed' && (!r.invoice_no || !r.order_no),
+    (r) => r.status !== 'Not ordered' && (!r.invoice_no || !r.order_no || !(attachmentsByItem[r.id]?.length)),
   ).length
 
   return (
     <>
       <div className="filterbar">
+        <button className="btn btn-primary" onClick={onAddItem}>
+          <Plus size={15} /> Add Item
+        </button>
         <span className="filterbar-label">Filter</span>
         {FILTER_COLUMNS.map(([id, label]) => (
           <MultiSelectFilter
@@ -542,12 +530,13 @@ export default function OrdersTable({
 
       {missingCount > 0 && (
         <div className="warn-banner">
-          ⚠ {missingCount} “Order placed” {missingCount === 1 ? 'item is' : 'items are'} missing an Invoice # or Order #.
+          ⚠ {missingCount} order{missingCount === 1 ? '' : 's'} require additional info (invoice and/or order # and file
+          attachment).
         </div>
       )}
 
       <div className="card overflow-hidden">
-        <div className="table-scroll" ref={scrollRef}>
+        <div className="table-scroll">
           <table className="grid" style={{ ...pinVars, zoom }}>
             <colgroup>
               <col style={{ width: 42 }} />
@@ -635,17 +624,7 @@ export default function OrdersTable({
               ))}
             </thead>
             <tbody>
-              {padTop > 0 && (
-                <tr aria-hidden="true">
-                  <td colSpan={leafCols.length + 1} style={{ height: padTop, padding: 0, border: 0 }} />
-                </tr>
-              )}
               {bodyRows}
-              {padBottom > 0 && (
-                <tr aria-hidden="true">
-                  <td colSpan={leafCols.length + 1} style={{ height: padBottom, padding: 0, border: 0 }} />
-                </tr>
-              )}
               {rows.length === 0 && (
                 <tr>
                   <td colSpan={leafCols.length + 1} className="center-note">
