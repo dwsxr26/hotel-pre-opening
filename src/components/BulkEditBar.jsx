@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { X } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Paperclip, X } from 'lucide-react'
 import { DEPARTMENTS } from '../lib/departments'
 import { STATUSES } from '../lib/constants'
 
@@ -17,10 +17,25 @@ export default function BulkEditBar({
   onApply,
   onClear,
   onSelectAllFiltered,
+  onAttach,
 }) {
   const [fields, setFields] = useState({
     category: NC, owner: NC, department: NC, status: NC, supplier: NC, order_date: NC, est_arrival: NC,
   })
+  const [attaching, setAttaching] = useState(false)
+  const fileInput = useRef(null)
+
+  const pickFiles = async (e) => {
+    const chosen = [...e.target.files]
+    e.target.value = ''
+    if (!chosen.length) return
+    setAttaching(true)
+    try {
+      await onAttach(chosen)
+    } finally {
+      setAttaching(false)
+    }
+  }
 
   const set = (k, v) => setFields((f) => ({ ...f, [k]: v }))
 
@@ -85,6 +100,10 @@ export default function BulkEditBar({
       </div>
 
       <div className="bulkbar-actions">
+        <button className="btn" disabled={attaching} onClick={() => fileInput.current?.click()} title="Attach file(s) to the selected items">
+          <Paperclip size={14} /> {attaching ? 'Uploading…' : 'Attach'}
+        </button>
+        <input ref={fileInput} type="file" multiple hidden onChange={pickFiles} />
         <button className="btn btn-primary" onClick={apply}>Apply to {count}</button>
         <button className="btn icon-btn" title="Clear selection" onClick={onClear}><X size={16} /></button>
       </div>

@@ -27,6 +27,7 @@ import QtyCell from './cells/QtyCell'
 import StatusCell from './cells/StatusCell'
 import DeptCell from './cells/DeptCell'
 import DateCell from './cells/DateCell'
+import AttachmentsCell from './cells/AttachmentsCell'
 
 // Filter shape: undefined | {type:'text',text} | {type:'set',values:[]}
 function columnFilterFn(row, columnId, fv) {
@@ -62,6 +63,10 @@ export default function OrdersTable({
   onAddCategory,
   onUndo,
   canUndo,
+  attachmentsByItem = {},
+  onUploadFiles,
+  onRemoveAttachment,
+  onDownloadAttachment,
 }) {
   const [pending, setPending] = useState(null) // {id, patch, meta}
   const [bulkPending, setBulkPending] = useState(null) // {ids, patch, summary}
@@ -261,9 +266,26 @@ export default function OrdersTable({
           />
         ),
       },
+      {
+        id: 'files',
+        header: 'Files',
+        size: 80,
+        enableSorting: false,
+        enableColumnFilter: false,
+        meta: { filter: 'none' },
+        cell: ({ row }) => (
+          <AttachmentsCell
+            itemId={row.original.id}
+            files={attachmentsByItem[row.original.id]}
+            onUpload={onUploadFiles}
+            onRemove={onRemoveAttachment}
+            onDownload={onDownloadAttachment}
+          />
+        ),
+      },
     ]
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categories, people, suppliers])
+  }, [categories, people, suppliers, attachmentsByItem])
 
   // Reconcile a saved column order with the current columns: keep the user's
   // ordering for known columns and append any new columns (so a schema change
@@ -529,6 +551,7 @@ export default function OrdersTable({
           onApply={applyBulk}
           onClear={clearSelection}
           onSelectAllFiltered={selectAllFiltered}
+          onAttach={(files) => onUploadFiles([...selected], files)}
         />
       )}
 

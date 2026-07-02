@@ -39,5 +39,5 @@ export const PINNED_COLUMNS = ['package', 'item']
 // Default left-to-right column order (used on first load and "Reset columns").
 export const DEFAULT_COLUMN_ORDER = [
   'package', 'item', 'category', 'department', 'owner', 'status',
-  'qty', 'unit_price', 'total', 'supplier', 'order_date', 'invoice_no', 'order_no', 'est_arrival', 'ref',
+  'qty', 'unit_price', 'total', 'supplier', 'order_date', 'invoice_no', 'order_no', 'est_arrival', 'ref', 'files',
 ]

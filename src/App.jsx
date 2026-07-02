@@ -5,6 +5,7 @@ import { useViewPrefs } from './hooks/useViewPrefs'
 import { fetchItems, subscribeItems, updateItem, updateItems } from './data/items'
 import { addCategory, fetchCategories } from './data/categories'
 import { ensureMyProfile, fetchProfiles, setMyPassword, updateMyProfile } from './data/profiles'
+import { fetchAttachments, removeLink, signedUrl, uploadFiles } from './data/attachments'
 import { DEFAULT_COLUMN_ORDER } from './lib/constants'
 import { displayName } from './lib/people'
 import Auth from './components/Auth'
@@ -36,6 +37,7 @@ export default function App() {
   const { user, loading: authLoading } = useAuth()
   const [items, setItems] = useState([])
   const [categories, setCategories] = useState([])
+  const [attachments, setAttachments] = useState({})
   const [profiles, setProfiles] = useState([])
   const [myProfile, setMyProfile] = useState(null)
   const [showProfile, setShowProfile] = useState(false)
@@ -50,12 +52,13 @@ export default function App() {
     if (!user) return
     let active = true
     const load = () =>
-      Promise.all([fetchItems(), fetchCategories(), fetchProfiles()])
-        .then(([its, cats, profs]) => {
+      Promise.all([fetchItems(), fetchCategories(), fetchProfiles(), fetchAttachments()])
+        .then(([its, cats, profs, atts]) => {
           if (!active) return
           setItems(its)
           setCategories(cats.map((c) => c.name))
           setProfiles(profs)
+          setAttachments(atts)
         })
         .catch((err) => console.error('Load failed', err))
         .finally(() => active && setDataLoading(false))
@@ -176,6 +179,44 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [undo])
 
+  // File attachments (stored in Supabase Storage; grid only shows counts).
+  const refreshAttachments = useCallback(() => {
+    fetchAttachments().then(setAttachments).catch((err) => console.error('Attachments load failed', err))
+  }, [])
+  const onUploadFiles = useCallback(
+    async (itemIds, files) => {
+      try {
+        await uploadFiles(files, itemIds)
+        refreshAttachments()
+      } catch (err) {
+        console.error('Upload failed', err)
+        alert('Could not upload the file(s). Please try again.')
+      }
+    },
+    [refreshAttachments],
+  )
+  const onRemoveAttachment = useCallback(
+    async (itemId, attachmentId) => {
+      try {
+        await removeLink(itemId, attachmentId)
+        refreshAttachments()
+      } catch (err) {
+        console.error('Remove attachment failed', err)
+        alert('Could not remove the file. Please try again.')
+      }
+    },
+    [refreshAttachments],
+  )
+  const onDownloadAttachment = useCallback(async (path) => {
+    try {
+      const url = await signedUrl(path)
+      window.open(url, '_blank', 'noopener')
+    } catch (err) {
+      console.error('Download failed', err)
+      alert('Could not open the file. Please try again.')
+    }
+  }, [])
+
   const onAddCategory = useCallback(async (name) => {
     const created = await addCategory(name)
     if (created) setCategories((cur) => (cur.includes(created.name) ? cur : [...cur, created.name].sort()))
@@ -254,6 +295,10 @@ export default function App() {
             onAddCategory={onAddCategory}
             onUndo={undo}
             canUndo={undoCount > 0}
+            attachmentsByItem={attachments}
+            onUploadFiles={onUploadFiles}
+            onRemoveAttachment={onRemoveAttachment}
+            onDownloadAttachment={onDownloadAttachment}
           />
         </>
       ) : tab === 'owner' ? (
