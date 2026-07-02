@@ -46,7 +46,7 @@ body {
 @media (min-width: 720px) { .kpis { grid-template-columns: repeat(4, 1fr); } }
 .kpi-card { border: 1px solid var(--border); border-radius: 12px; background: var(--card); padding: 14px 16px; }
 .kpi-label { font-size: 12px; color: var(--muted-fg); }
-.kpi-value { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.kpi-value { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
 .kpi-hint { font-size: 11px; color: var(--muted-fg); margin-top: 2px; }
 
 /* -------------------------------------------------------------------- tabs */

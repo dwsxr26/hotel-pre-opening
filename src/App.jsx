@@ -10,7 +10,7 @@ import { DEFAULT_COLUMN_ORDER } from './lib/constants'
 import { displayName } from './lib/people'
 import Auth from './components/Auth'
 import Header from './components/Header'
-import Kpis from './components/Kpis'
+import Metrics from './components/Metrics'
 import OrdersTable from './components/OrdersTable'
 import Summary from './components/Summary'
 import ProfileModal from './components/ProfileModal'
@@ -23,8 +23,8 @@ const DEFAULT_VIEW = {
   columnOrder: DEFAULT_COLUMN_ORDER,
   globalFilter: '',
   pagination: { pageIndex: 0, pageSize: 50 },
-  summaryOpen: true,
   zoom: 1,
+  metricsOpen: false, // Metrics panel collapsed by default
 }
 
 const TABS = [
@@ -247,7 +247,11 @@ export default function App() {
         onEditName={() => setShowProfile(true)}
         onInvite={() => setShowInvite(true)}
       />
-      <Kpis items={items} />
+      <Metrics
+        items={items}
+        open={view.metricsOpen === true}
+        onToggle={() => setView({ metricsOpen: !(view.metricsOpen === true) })}
+      />
 
       <div className="tabs">
         {TABS.map((t) => (

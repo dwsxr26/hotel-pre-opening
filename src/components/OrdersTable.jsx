@@ -9,12 +9,11 @@ import {
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
-  ArrowDown, ArrowUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight,
+  ArrowDown, ArrowUp, ChevronsUpDown, ChevronLeft, ChevronRight,
   Download, GripVertical, Minus, Plus, RotateCcw,
 } from 'lucide-react'
 import { DEFAULT_COLUMN_ORDER, FILTER_COLUMNS, PAGE_SIZES, PINNED_COLUMNS } from '../lib/constants'
 import { downloadCsv, itemsToCsv } from '../lib/csv'
-import StatusBars from './StatusBars'
 import BulkEditBar from './BulkEditBar'
 import MultiSelectFilter from './MultiSelectFilter'
 import { formatMoney, lineTotal } from '../lib/format'
@@ -486,7 +485,6 @@ export default function OrdersTable({
   const firstShown = filteredRows.length === 0 ? 0 : pageIndex * pageSize + 1
   const lastShown = Math.min((pageIndex + 1) * pageSize, filteredRows.length)
 
-  const summaryOpen = view.summaryOpen !== false
   const exportCsv = () => downloadCsv('florence-pre-opening.csv', itemsToCsv(rowsData))
   const missingCount = rowsData.filter(
     (r) => r.status === 'Order placed' && (!r.invoice_no || !r.order_no),
@@ -494,19 +492,6 @@ export default function OrdersTable({
 
   return (
     <>
-      <div className="card" style={{ marginBottom: 12 }}>
-        <button className="collapse-hd" onClick={() => setView({ summaryOpen: !summaryOpen })}>
-          <ChevronDown size={16} className={`collapse-chev ${summaryOpen ? 'open' : ''}`} />
-          <span className="card-hd" style={{ padding: 0, border: 0 }}>Line items by status</span>
-          <span className="collapse-hint">{summaryOpen ? 'Hide' : 'Show'}</span>
-        </button>
-        {summaryOpen && (
-          <div className="summary-pad" style={{ paddingTop: 0 }}>
-            <StatusBars rows={rowsData} grid title={null} />
-          </div>
-        )}
-      </div>
-
       <div className="filterbar">
         <span className="filterbar-label">Filter</span>
         {FILTER_COLUMNS.map(([id, label]) => (
