@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Search } from 'lucide-react'
 import { useAuth } from './hooks/useAuth'
 import { useViewPrefs } from './hooks/useViewPrefs'
@@ -23,6 +23,7 @@ const DEFAULT_VIEW = {
   globalFilter: '',
   pagination: { pageIndex: 0, pageSize: 50 },
   summaryOpen: true,
+  zoom: 1,
 }
 
 const TABS = [
@@ -87,43 +88,93 @@ export default function App() {
     [items],
   )
 
-  // Optimistic edit: patch locally, then persist. Revert on failure.
-  const onEdit = useCallback(async (id, patch) => {
-    let prev
-    setItems((cur) =>
-      cur.map((r) => {
-        if (r.id === id) {
-          prev = r
-          return { ...r, ...patch }
-        }
-        return r
-      }),
-    )
-    try {
-      await updateItem(id, patch)
-    } catch (err) {
-      console.error('Save failed', err)
-      if (prev) setItems((cur) => cur.map((r) => (r.id === id ? prev : r)))
-      alert('Could not save that change. Please try again.')
-    }
+  // Keep a live ref of items so edits can capture previous values synchronously
+  // (for the undo stack) without stale closures.
+  const itemsRef = useRef(items)
+  useEffect(() => {
+    itemsRef.current = items
+  }, [items])
+
+  // Undo stack (last 30 actions). Each entry knows how to reverse itself.
+  const undoRef = useRef([])
+  const [undoCount, setUndoCount] = useState(0)
+  const pushUndo = useCallback((entry) => {
+    undoRef.current = [...undoRef.current, entry].slice(-30)
+    setUndoCount(undoRef.current.length)
   }, [])
 
-  // Bulk edit: apply the same patch to many items. Optimistic, revert on error.
-  const onBulkEdit = useCallback(async (ids, patch) => {
-    const idSet = new Set(ids)
-    let prev
-    setItems((cur) => {
-      prev = cur
-      return cur.map((r) => (idSet.has(r.id) ? { ...r, ...patch } : r))
-    })
-    try {
-      await updateItems(ids, patch)
-    } catch (err) {
-      console.error('Bulk update failed', err)
-      if (prev) setItems(prev)
-      alert('Could not apply the bulk change. Please try again.')
+  const pick = (row, keys) => Object.fromEntries(keys.map((k) => [k, row?.[k]]))
+
+  // Optimistic single edit. `record` pushes an undo entry (skipped when the edit
+  // IS an undo).
+  const onEdit = useCallback(
+    async (id, patch, record = true) => {
+      const before = itemsRef.current.find((r) => r.id === id)
+      const idSet = new Set([id])
+      setItems((cur) => cur.map((r) => (idSet.has(r.id) ? { ...r, ...patch } : r)))
+      if (record && before) pushUndo({ type: 'single', id, prev: pick(before, Object.keys(patch)) })
+      try {
+        await updateItem(id, patch)
+      } catch (err) {
+        console.error('Save failed', err)
+        if (before) setItems((cur) => cur.map((r) => (r.id === id ? before : r)))
+        alert('Could not save that change. Please try again.')
+      }
+    },
+    [pushUndo],
+  )
+
+  // Optimistic bulk edit (same patch to many items).
+  const onBulkEdit = useCallback(
+    async (ids, patch, record = true) => {
+      const keys = Object.keys(patch)
+      const changes = ids.map((id) => ({ id, prev: pick(itemsRef.current.find((r) => r.id === id), keys) }))
+      const idSet = new Set(ids)
+      const prevAll = itemsRef.current
+      setItems((cur) => cur.map((r) => (idSet.has(r.id) ? { ...r, ...patch } : r)))
+      if (record) pushUndo({ type: 'bulk', changes })
+      try {
+        await updateItems(ids, patch)
+      } catch (err) {
+        console.error('Bulk update failed', err)
+        setItems(prevAll)
+        alert('Could not apply the bulk change. Please try again.')
+      }
+    },
+    [pushUndo],
+  )
+
+  // Undo the most recent action (restore captured previous values).
+  const undo = useCallback(() => {
+    const entry = undoRef.current[undoRef.current.length - 1]
+    if (!entry) return
+    undoRef.current = undoRef.current.slice(0, -1)
+    setUndoCount(undoRef.current.length)
+    if (entry.type === 'single') {
+      onEdit(entry.id, entry.prev, false)
+    } else if (entry.type === 'bulk') {
+      const map = new Map(entry.changes.map((c) => [c.id, c.prev]))
+      setItems((cur) => cur.map((r) => (map.has(r.id) ? { ...r, ...map.get(r.id) } : r)))
+      Promise.all(entry.changes.map((c) => updateItem(c.id, c.prev))).catch((err) => {
+        console.error('Undo failed', err)
+        alert('Could not undo. Please refresh.')
+      })
     }
-  }, [])
+  }, [onEdit])
+
+  // Ctrl/Cmd+Z — but let native undo work while editing a field.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z' || e.shiftKey) return
+      const t = e.target
+      const tag = t?.tagName
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || t?.isContentEditable) return
+      e.preventDefault()
+      undo()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [undo])
 
   const onAddCategory = useCallback(async (name) => {
     const created = await addCategory(name)
@@ -201,6 +252,8 @@ export default function App() {
             onEdit={onEdit}
             onBulkEdit={onBulkEdit}
             onAddCategory={onAddCategory}
+            onUndo={undo}
+            canUndo={undoCount > 0}
           />
         </>
       ) : tab === 'owner' ? (

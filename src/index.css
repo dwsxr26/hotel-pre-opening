@@ -104,9 +104,8 @@ select.ctrl { appearance: none; cursor: pointer; padding-right: 26px;
 .grid .pin-pkg { left: var(--sel-w); width: var(--pkg-w); min-width: var(--pkg-w); max-width: var(--pkg-w); }
 .grid .pin-item { left: calc(var(--sel-w) + var(--pkg-w)); width: var(--item-w); min-width: var(--item-w); max-width: var(--item-w); }
 .grid .pinned-shadow { box-shadow: 6px 0 6px -6px rgba(0, 0, 0, 0.12); }
-.grid .select-cell { text-align: center; }
-.grid .select-cell input { margin-top: 10px; cursor: pointer; }
-.grid th.select-cell input { margin-top: 0; vertical-align: middle; }
+.grid .select-cell { text-align: center; vertical-align: middle; padding: 0; }
+.grid .select-cell input { margin: 0; cursor: pointer; vertical-align: middle; }
 .grid tr.row-selected td { background: hsl(205 70% 96%); }
 
 /* header internals */
@@ -204,6 +203,9 @@ input.cell-input.cell-num { text-align: right; }
 .msf-btn.active { border-color: var(--accent); color: var(--accent); background: hsl(200 25% 97%); }
 .msf-count { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; }
 .msf .filter-pop { left: 0; right: auto; }
+.zoomer { display: inline-flex; align-items: center; gap: 4px; }
+.zoom-label { font-size: 12px; color: var(--muted-fg); font-variant-numeric: tabular-nums; min-width: 38px; text-align: center; }
+.filterbar .icon-btn { height: 32px; }
 
 /* bulk edit bar */
 .bulkbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; margin-bottom: 12px; border: 1px solid hsl(200 30% 70%); border-radius: 10px; background: hsl(200 40% 97%); position: sticky; top: 8px; z-index: 15; }

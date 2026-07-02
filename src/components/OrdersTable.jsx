@@ -10,7 +10,7 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   ArrowDown, ArrowUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight,
-  Download, GripVertical,
+  Download, GripVertical, Minus, Plus, RotateCcw,
 } from 'lucide-react'
 import { DEFAULT_COLUMN_ORDER, FILTER_COLUMNS, PAGE_SIZES, PINNED_COLUMNS } from '../lib/constants'
 import { downloadCsv, itemsToCsv } from '../lib/csv'
@@ -60,6 +60,8 @@ export default function OrdersTable({
   onEdit,
   onBulkEdit,
   onAddCategory,
+  onUndo,
+  canUndo,
 }) {
   const [pending, setPending] = useState(null) // {id, patch, meta}
   const [bulkPending, setBulkPending] = useState(null) // {ids, patch, summary}
@@ -339,6 +341,10 @@ export default function OrdersTable({
   const itemWidth = table.getColumn('item')?.getSize() ?? 0
   const pinVars = { '--sel-w': '42px', '--pkg-w': `${pkgWidth}px`, '--item-w': `${itemWidth}px` }
 
+  // Zoom the table in its frame (persisted per user).
+  const zoom = view.zoom || 1
+  const setZoom = (z) => setView({ zoom: Math.min(1.5, Math.max(0.6, Math.round(z * 10) / 10)) })
+
   // Row selection (by id, so it survives paging and filtering).
   const pageIds = rows.map((r) => r.original.id)
   const filteredIds = filteredRows.map((r) => r.original.id)
@@ -495,6 +501,21 @@ export default function OrdersTable({
             Clear filters
           </button>
         )}
+
+        <div className="spacer" />
+
+        <button className="btn icon-btn" onClick={onUndo} disabled={!canUndo} title="Undo last change (Ctrl+Z)">
+          <RotateCcw size={15} /> Undo
+        </button>
+        <div className="zoomer" title="Zoom the table">
+          <button className="btn icon-btn" onClick={() => setZoom(zoom - 0.1)} disabled={zoom <= 0.6} aria-label="Zoom out">
+            <Minus size={15} />
+          </button>
+          <span className="zoom-label">{Math.round(zoom * 100)}%</span>
+          <button className="btn icon-btn" onClick={() => setZoom(zoom + 0.1)} disabled={zoom >= 1.5} aria-label="Zoom in">
+            <Plus size={15} />
+          </button>
+        </div>
       </div>
 
       {selected.size > 0 && (
@@ -519,7 +540,7 @@ export default function OrdersTable({
 
       <div className="card overflow-hidden">
         <div className="table-scroll" ref={scrollRef}>
-          <table className="grid" style={pinVars}>
+          <table className="grid" style={{ ...pinVars, zoom }}>
             <colgroup>
               <col style={{ width: 42 }} />
               {leafCols.map((col) => (
