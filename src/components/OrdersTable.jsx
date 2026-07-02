@@ -52,14 +52,17 @@ const DEFAULT_ORDER = DEFAULT_COLUMN_ORDER
 export default function OrdersTable({
   items,
   categories,
+  departments,
   people,
   suppliers,
   view,
   setView,
   onEdit,
   onBulkEdit,
+  onDeleteItems,
   onAddItem,
   onAddCategory,
+  onAddDepartment,
   onUndo,
   canUndo,
   attachmentsByItem = {},
@@ -69,6 +72,7 @@ export default function OrdersTable({
 }) {
   const [pending, setPending] = useState(null) // {id, patch, meta}
   const [bulkPending, setBulkPending] = useState(null) // {ids, patch, summary}
+  const [deletePending, setDeletePending] = useState(null) // ids[]
   const [selected, setSelected] = useState(() => new Set()) // selected item ids
   const [dragCol, setDragCol] = useState(null) // column being dragged
   const [dragOverCol, setDragOverCol] = useState(null) // column currently under the cursor
@@ -133,7 +137,12 @@ export default function OrdersTable({
         meta: { filter: 'set' },
         filterFn: columnFilterFn,
         cell: ({ row, getValue }) => (
-          <DeptCell value={getValue()} onEdit={(patch) => onEdit(row.original.id, patch)} />
+          <DeptCell
+            value={getValue()}
+            departments={departments}
+            onEdit={(patch) => onEdit(row.original.id, patch)}
+            onAddDepartment={onAddDepartment}
+          />
         ),
       },
       {
@@ -284,7 +293,7 @@ export default function OrdersTable({
       },
     ]
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categories, people, suppliers, attachmentsByItem])
+  }, [categories, departments, people, suppliers, attachmentsByItem])
 
   // Reconcile a saved column order with the current columns: keep the user's
   // ordering for known columns and append any new columns (so a schema change
@@ -519,12 +528,14 @@ export default function OrdersTable({
           filteredCount={filteredRows.length}
           allFilteredSelected={allFilteredSelected}
           categories={categories}
+          departments={departments}
           people={people}
           suppliers={suppliers}
           onApply={applyBulk}
           onClear={clearSelection}
           onSelectAllFiltered={selectAllFiltered}
           onAttach={(files) => onUploadFiles([...selected], files)}
+          onDelete={() => setDeletePending([...selected])}
         />
       )}
 
@@ -704,6 +715,19 @@ export default function OrdersTable({
         onConfirm={() => {
           onBulkEdit(bulkPending.ids, bulkPending.patch)
           setBulkPending(null)
+          clearSelection()
+        }}
+      />
+
+      <ConfirmModal
+        open={!!deletePending}
+        title={`Delete ${deletePending?.length} item${deletePending?.length === 1 ? '' : 's'}?`}
+        message="This permanently removes the selected line items and their attachment links. This can't be undone."
+        confirmLabel="Delete"
+        onCancel={() => setDeletePending(null)}
+        onConfirm={() => {
+          onDeleteItems(deletePending)
+          setDeletePending(null)
           clearSelection()
         }}
       />

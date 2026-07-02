@@ -71,6 +71,8 @@ select.ctrl { appearance: none; cursor: pointer; padding-right: 26px;
 .btn:hover { background: hsl(240 4.8% 96%); }
 .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
 .btn-primary:hover { background: hsl(240 5.9% 20%); }
+.btn-danger { color: hsl(0 60% 45%); border-color: hsl(0 60% 82%); }
+.btn-danger:hover { background: hsl(0 75% 96%); border-color: hsl(0 60% 70%); }
 
 /* -------------------------------------------------------------------- card */
 .card { border: 1px solid var(--border); border-radius: 12px; background: var(--card); }

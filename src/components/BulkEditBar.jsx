@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { Paperclip, X } from 'lucide-react'
-import { DEPARTMENTS } from '../lib/departments'
+import { Paperclip, Trash2, X } from 'lucide-react'
 import { STATUSES } from '../lib/constants'
 import AttachmentsModal from './AttachmentsModal'
 
@@ -13,12 +12,14 @@ export default function BulkEditBar({
   filteredCount,
   allFilteredSelected,
   categories,
+  departments,
   people,
   suppliers,
   onApply,
   onClear,
   onSelectAllFiltered,
   onAttach,
+  onDelete,
 }) {
   const [fields, setFields] = useState({
     category: NC, owner: NC, department: NC, status: NC, supplier: NC, order_date: NC, est_arrival: NC,
@@ -66,7 +67,7 @@ export default function BulkEditBar({
         </select>
         <select className="ctrl" value={fields.department} onChange={(e) => set('department', e.target.value)}>
           <option value={NC}>Department…</option>
-          {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+          {departments.map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
         <select className="ctrl" value={fields.status} onChange={(e) => set('status', e.target.value)}>
           <option value={NC}>Status…</option>
@@ -92,6 +93,9 @@ export default function BulkEditBar({
           <Paperclip size={14} /> Attach
         </button>
         <button className="btn btn-primary" onClick={apply}>Apply to {count}</button>
+        <button className="btn icon-btn btn-danger" title={`Delete ${count} selected`} onClick={onDelete}>
+          <Trash2 size={16} />
+        </button>
         <button className="btn icon-btn" title="Clear selection" onClick={onClear}><X size={16} /></button>
       </div>
 

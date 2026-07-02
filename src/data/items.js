@@ -42,6 +42,12 @@ export async function updateItems(ids, patch) {
   return data ?? []
 }
 
+// Delete line items.
+export async function deleteItems(ids) {
+  const { error } = await supabase.from('items').delete().in('id', ids)
+  if (error) throw error
+}
+
 // Subscribe to changes made by other team members. Returns an unsubscribe fn.
 export function subscribeItems(onChange) {
   const channel = supabase

@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Search } from 'lucide-react'
 import { useAuth } from './hooks/useAuth'
 import { useViewPrefs } from './hooks/useViewPrefs'
-import { addItem, fetchItems, subscribeItems, updateItem, updateItems } from './data/items'
+import { addItem, deleteItems, fetchItems, subscribeItems, updateItem, updateItems } from './data/items'
 import { filterItems } from './lib/filtering'
 import { addCategory, fetchCategories } from './data/categories'
+import { addDepartment, fetchDepartments } from './data/departments'
+import { DEPARTMENTS } from './lib/departments'
 import { ensureMyProfile, fetchProfiles, setMyPassword, updateMyProfile } from './data/profiles'
 import { fetchAttachments, removeLink, signedUrl, uploadFiles } from './data/attachments'
 import { DEFAULT_COLUMN_ORDER } from './lib/constants'
@@ -38,6 +40,7 @@ export default function App() {
   const { user, loading: authLoading } = useAuth()
   const [items, setItems] = useState([])
   const [categories, setCategories] = useState([])
+  const [departments, setDepartments] = useState(DEPARTMENTS)
   const [attachments, setAttachments] = useState({})
   const [profiles, setProfiles] = useState([])
   const [myProfile, setMyProfile] = useState(null)
@@ -53,13 +56,14 @@ export default function App() {
     if (!user) return
     let active = true
     const load = () =>
-      Promise.all([fetchItems(), fetchCategories(), fetchProfiles(), fetchAttachments()])
-        .then(([its, cats, profs, atts]) => {
+      Promise.all([fetchItems(), fetchCategories(), fetchProfiles(), fetchAttachments(), fetchDepartments()])
+        .then(([its, cats, profs, atts, depts]) => {
           if (!active) return
           setItems(its)
           setCategories(cats.map((c) => c.name))
           setProfiles(profs)
           setAttachments(atts)
+          if (depts.length) setDepartments(depts.map((d) => d.name))
         })
         .catch((err) => console.error('Load failed', err))
         .finally(() => active && setDataLoading(false))
@@ -224,6 +228,20 @@ export default function App() {
     }
   }, [])
 
+  // Delete selected line items (optimistic; revert on error).
+  const onDeleteItems = useCallback(async (ids) => {
+    const idSet = new Set(ids)
+    const prev = itemsRef.current
+    setItems((cur) => cur.filter((r) => !idSet.has(r.id)))
+    try {
+      await deleteItems(ids)
+    } catch (err) {
+      console.error('Delete failed', err)
+      setItems(prev)
+      alert('Could not delete the selected items. Please try again.')
+    }
+  }, [])
+
   // Add a new blank line item at the top of the list.
   const onAddItem = useCallback(async () => {
     const minIdx = itemsRef.current.reduce((m, r) => Math.min(m, r.sort_index ?? 0), 0)
@@ -245,6 +263,12 @@ export default function App() {
   const onAddCategory = useCallback(async (name) => {
     const created = await addCategory(name)
     if (created) setCategories((cur) => (cur.includes(created.name) ? cur : [...cur, created.name].sort()))
+    return created
+  }, [])
+
+  const onAddDepartment = useCallback(async (name) => {
+    const created = await addDepartment(name)
+    if (created) setDepartments((cur) => (cur.includes(created.name) ? cur : [...cur, created.name].sort()))
     return created
   }, [])
 
@@ -315,14 +339,17 @@ export default function App() {
           <OrdersTable
             items={items}
             categories={categories}
+            departments={departments}
             people={people}
             suppliers={suppliers}
             view={view}
             setView={setView}
             onEdit={onEdit}
             onBulkEdit={onBulkEdit}
+            onDeleteItems={onDeleteItems}
             onAddItem={onAddItem}
             onAddCategory={onAddCategory}
+            onAddDepartment={onAddDepartment}
             onUndo={undo}
             canUndo={undoCount > 0}
             attachmentsByItem={attachments}
@@ -332,9 +359,9 @@ export default function App() {
           />
         </>
       ) : tab === 'owner' ? (
-        <Summary items={items} groupKey="owner" groupLabel="Owner" blankLabel="Unassigned" />
+        <Summary items={items} departments={departments} groupKey="owner" groupLabel="Owner" blankLabel="Unassigned" />
       ) : (
-        <Summary items={items} groupKey="supplier" groupLabel="Supplier" blankLabel="(No supplier)" />
+        <Summary items={items} departments={departments} groupKey="supplier" groupLabel="Supplier" blankLabel="(No supplier)" />
       )}
 
       {showProfile && (

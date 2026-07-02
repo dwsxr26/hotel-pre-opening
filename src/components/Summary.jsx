@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ArrowDown, ArrowUp, ChevronsUpDown, Search } from 'lucide-react'
 import { STATUSES } from '../lib/constants'
-import { DEPARTMENTS } from '../lib/departments'
 import { formatInt, formatMoney, lineTotal } from '../lib/format'
 import StatusBars from './StatusBars'
 import FilterPopover from './FilterPopover'
@@ -11,7 +10,7 @@ import MultiSelectFilter from './MultiSelectFilter'
 // (groupKey = 'owner' | 'supplier'). Counts are line items, not quantities.
 // The at-a-glance table has a sticky header, click-to-sort columns and a
 // name filter.
-export default function Summary({ items, groupKey, groupLabel, blankLabel }) {
+export default function Summary({ items, departments, groupKey, groupLabel, blankLabel }) {
   const [selected, setSelected] = useState('__all')
   const [sort, setSort] = useState({ key: 'value', dir: 'desc' })
   const [query, setQuery] = useState('')
@@ -99,7 +98,7 @@ export default function Summary({ items, groupKey, groupLabel, blankLabel }) {
           ))}
         </select>
 
-        <MultiSelectFilter label="Department" options={DEPARTMENTS} selected={deptFilter} onChange={setDeptFilter} />
+        <MultiSelectFilter label="Department" options={departments} selected={deptFilter} onChange={setDeptFilter} />
         <MultiSelectFilter label="Status" options={STATUSES} selected={statusFilter} onChange={setStatusFilter} />
 
         {(deptFilter.length > 0 || statusFilter.length > 0) && (
