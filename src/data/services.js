@@ -32,6 +32,18 @@ export async function fetchServiceCloses() {
   return map
 }
 
+// Admins only (UI-gated): edit a line's budget or owner.
+export async function updateServiceLine(id, patch) {
+  const { data, error } = await supabase
+    .from('service_lines')
+    .update(patch)
+    .eq('id', id)
+    .select('id, name, department, owner, budget, sort_index')
+    .single()
+  if (error) throw error
+  return data
+}
+
 // --- entries (forecast breakdown + invoices) -------------------------------
 export async function addServiceEntry(entry) {
   const { data, error } = await supabase.from('service_entries').insert(entry).select(ENTRY_COLS).single()

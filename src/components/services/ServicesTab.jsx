@@ -11,7 +11,8 @@ const monthLabel = (key) => SERVICE_MONTHS.find((m) => m.key === key)?.label || 
 // Services module. VAT toggle + Metrics + the budget grid, with per-user column
 // layout persisted. Clicking a month cell opens the entry editor.
 export default function ServicesTab({
-  lines, entriesByLine, closesByLine, onEntryAdd, onEntryUpdate, onEntryDelete, onEntryAttach, onDownload,
+  lines, entriesByLine, closesByLine, isAdmin, people, onLineUpdate,
+  onEntryAdd, onEntryUpdate, onEntryDelete, onEntryAttach, onDownload,
   onCloseMonth, onReopenMonth,
 }) {
   const { prefs: view, update: setView } = useViewPrefs(true, DEFAULT_SERVICES_VIEW, 'services')
@@ -51,6 +52,9 @@ export default function ServicesTab({
         incl={incl}
         view={view}
         setView={setView}
+        isAdmin={isAdmin}
+        people={people}
+        onLineUpdate={onLineUpdate}
         onOpenMonth={(line, month) => setOpen({ lineId: line.id, month })}
       />
 

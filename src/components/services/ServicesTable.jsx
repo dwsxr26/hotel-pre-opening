@@ -1,29 +1,37 @@
-import { useEffect, useMemo, useRef } from 'react'
-import { getCoreRowModel, useReactTable } from '@tanstack/react-table'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { GripVertical } from 'lucide-react'
 import { formatMoney } from '../../lib/format'
 import { SERVICE_MONTHS, isPastMonth, computeLine } from '../../lib/serviceCalc'
 
-const INFO_COLS = [
-  { id: 'line', header: 'Line', size: 260 },
-  { id: 'department', header: 'Department', size: 130 },
-  { id: 'owner', header: 'Owner', size: 120 },
-  { id: 'budget', header: 'Budget', size: 110, num: true },
-  { id: 'spent', header: 'Spent', size: 110, num: true },
-  { id: 'reforecast', header: 'Reforecast', size: 120, num: true },
-  { id: 'remaining', header: 'Remaining', size: 120, num: true },
+// Hand-rolled sticky grid: the 7 info columns are pinned (fixed on horizontal
+// scroll), resizable and drag-reorderable; the 33 month columns scroll. Offsets
+// come from state (not measured), so scrolling never affects widths.
+const INFO_DEFS = [
+  { id: 'line', label: 'Line', w: 260 },
+  { id: 'department', label: 'Department', w: 130 },
+  { id: 'owner', label: 'Owner', w: 130 },
+  { id: 'budget', label: 'Budget', w: 110, num: true },
+  { id: 'spent', label: 'Spent', w: 110, num: true },
+  { id: 'reforecast', label: 'Reforecast', w: 120, num: true },
+  { id: 'remaining', label: 'Remaining', w: 120, num: true },
 ]
-const INFO_IDS = INFO_COLS.map((c) => c.id)
-const MONTH_COLS = SERVICE_MONTHS.map((m) => ({ id: `m:${m.key}`, header: m.label, size: 96, num: true, month: m.key }))
-const ALL_COLS = [...INFO_COLS, ...MONTH_COLS]
-const DEFAULT_ORDER = ALL_COLS.map((c) => c.id)
+const INFO_IDS = INFO_DEFS.map((d) => d.id)
+const MONTH_W = 96
 
-// Services grid: info columns (Line…Remaining) are pinned, resizable and
-// reorderable; the 33 month columns scroll. Clicking a month cell opens the
-// entry editor. Read figures come from computeLine (VAT-aware).
-export default function ServicesTable({ lines, entriesByLine, closesByLine, incl, view, setView, onOpenMonth }) {
+export default function ServicesTable({ lines, entriesByLine, closesByLine, incl, view, setView, onOpenMonth, isAdmin, people, onLineUpdate }) {
+  const [drag, setDrag] = useState(null) // live resize: { id, w }
+  const [dragCol, setDragCol] = useState(null)
   const scrollRef = useRef(null)
   const didScroll = useRef(false)
+
+  // Default the horizontal scroll to Jul-26 (first forecast month); scroll left
+  // for history. Runs once after data loads.
+  useEffect(() => {
+    if (didScroll.current || lines.length === 0 || !scrollRef.current) return
+    const idx = SERVICE_MONTHS.findIndex((m) => m.key === '2026-07-01')
+    if (idx > 0) scrollRef.current.scrollLeft = idx * MONTH_W
+    didScroll.current = true
+  }, [lines])
 
   const calc = useMemo(() => {
     const map = {}
@@ -31,66 +39,88 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
     return map
   }, [lines, entriesByLine, closesByLine, incl])
 
-  const columns = useMemo(() => ALL_COLS.map((c) => ({ id: c.id, header: c.header, size: c.size })), [])
+  const infoOrder = useMemo(() => {
+    const saved = view.svcOrder
+    if (saved && saved.length === INFO_IDS.length && INFO_IDS.every((id) => saved.includes(id))) return saved
+    return INFO_IDS
+  }, [view.svcOrder])
 
-  const effectiveOrder = useMemo(() => {
-    const saved = view.columnOrder?.length ? view.columnOrder : DEFAULT_ORDER
-    const known = saved.filter((id) => DEFAULT_ORDER.includes(id))
-    const missing = DEFAULT_ORDER.filter((id) => !known.includes(id))
-    return [...known, ...missing]
-  }, [view.columnOrder])
-
-  const table = useReactTable({
-    data: lines,
-    columns,
-    state: {
-      columnSizing: view.columnSizing || {},
-      columnOrder: effectiveOrder,
-      columnPinning: { left: INFO_IDS },
-    },
-    columnResizeMode: 'onChange',
-    enableColumnResizing: true,
-    onColumnSizingChange: (u) =>
-      setView((p) => ({ columnSizing: typeof u === 'function' ? u(p.columnSizing || {}) : u })),
-    getCoreRowModel: getCoreRowModel(),
-  })
-
-  // Default the horizontal scroll to Jul-26 (first forecast month); user can
-  // scroll left for the historicals. Runs once after data loads.
-  useEffect(() => {
-    if (didScroll.current || lines.length === 0 || !scrollRef.current) return
-    const el = scrollRef.current.querySelector('th[data-month="2026-07-01"]')
-    if (!el) return
-    const pinnedW = INFO_IDS.reduce((s, id) => s + (table.getColumn(id)?.getSize() ?? 0), 0)
-    scrollRef.current.scrollLeft = el.offsetLeft - pinnedW
-    didScroll.current = true
-  }, [lines, table])
-
-  const leaf = table.getVisibleLeafColumns()
-  const meta = (id) => ALL_COLS.find((c) => c.id === id) || {}
-
-  const cellContent = (colId, line) => {
-    const c = calc[line.id]
-    const m = meta(colId)
-    if (colId === 'line') return line.name
-    if (colId === 'department') return line.department
-    if (colId === 'owner') return line.owner || '—'
-    if (colId === 'budget') return formatMoney(c.budget)
-    if (colId === 'spent') return formatMoney(c.spent)
-    if (colId === 'reforecast') return formatMoney(c.reforecast)
-    if (colId === 'remaining') return formatMoney(c.remaining)
-    if (m.month) {
-      const mv = c.monthly[m.month]
-      return mv.effective ? formatMoney(mv.effective) : '-'
-    }
-    return null
+  const width = (id) => {
+    if (drag && drag.id === id) return drag.w
+    return view.svcWidths?.[id] ?? INFO_DEFS.find((d) => d.id === id)?.w ?? MONTH_W
   }
 
-  const reorder = (from, to) => {
-    if (!INFO_IDS.includes(from) || !INFO_IDS.includes(to) || from === to) return
-    const order = [...effectiveOrder]
-    order.splice(order.indexOf(to), 0, order.splice(order.indexOf(from), 1)[0])
-    setView({ columnOrder: order })
+  // Cumulative left offsets for the pinned info columns (recomputed each render
+  // so a live resize shifts the columns to its right).
+  const infoCols = infoOrder.map((id) => ({ ...INFO_DEFS.find((d) => d.id === id), w: width(id) }))
+  let acc = 0
+  const lefts = {}
+  for (const c of infoCols) {
+    lefts[c.id] = acc
+    acc += c.w
+  }
+
+  const startResize = (id, e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const startX = e.clientX
+    const startW = width(id)
+    let latest = startW
+    const move = (ev) => {
+      latest = Math.max(80, startW + (ev.clientX - startX))
+      setDrag({ id, w: latest })
+    }
+    const up = () => {
+      window.removeEventListener('mousemove', move)
+      window.removeEventListener('mouseup', up)
+      setView({ svcWidths: { ...(view.svcWidths || {}), [id]: latest } })
+      setDrag(null)
+    }
+    window.addEventListener('mousemove', move)
+    window.addEventListener('mouseup', up)
+  }
+
+  const onDrop = (targetId) => {
+    if (!dragCol || dragCol === targetId) return setDragCol(null)
+    const order = [...infoOrder]
+    order.splice(order.indexOf(targetId), 0, order.splice(order.indexOf(dragCol), 1)[0])
+    setView({ svcOrder: order })
+    setDragCol(null)
+  }
+
+  const infoCell = (id, line, c) => {
+    if (id === 'line') return <span className="cell-pad" title={line.name}>{line.name}</span>
+    if (id === 'department') return <span className="cell-pad">{line.department}</span>
+    if (id === 'owner') {
+      if (!isAdmin) return <span className="cell-pad">{line.owner || '—'}</span>
+      const opts = line.owner && !people.includes(line.owner) ? [line.owner, ...people] : people
+      return (
+        <select
+          className="cell-input" value={line.owner || ''}
+          onChange={(e) => onLineUpdate(line.id, { owner: e.target.value })}
+        >
+          <option value="">Unassigned</option>
+          {opts.map((p) => <option key={p} value={p}>{p}</option>)}
+        </select>
+      )
+    }
+    if (id === 'budget') {
+      if (!isAdmin) return <span className="cell-pad cell-num">{formatMoney(c.budget)}</span>
+      return (
+        <input
+          key={line.budget} className="cell-input cell-num" type="number" step="any" defaultValue={line.budget}
+          title="Budget (ex VAT)"
+          onBlur={(e) => {
+            const v = Number(e.target.value) || 0
+            if (v !== Number(line.budget)) onLineUpdate(line.id, { budget: v })
+          }}
+        />
+      )
+    }
+    if (id === 'spent') return <span className="cell-pad cell-num">{formatMoney(c.spent)}</span>
+    if (id === 'reforecast') return <span className="cell-pad cell-num">{formatMoney(c.reforecast)}</span>
+    if (id === 'remaining') return <span className="cell-pad cell-num">{formatMoney(c.remaining)}</span>
+    return null
   }
 
   if (lines.length === 0) {
@@ -108,92 +138,71 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
       <div className="table-scroll" ref={scrollRef}>
         <table className="grid svc-grid">
           <colgroup>
-            {leaf.map((col) => (
-              <col key={col.id} style={{ width: col.getSize() }} />
-            ))}
+            {infoCols.map((c) => <col key={c.id} style={{ width: c.w }} />)}
+            {SERVICE_MONTHS.map((m) => <col key={m.key} style={{ width: MONTH_W }} />)}
           </colgroup>
           <thead>
             <tr>
-              {table.getHeaderGroups()[0].headers.map((header) => {
-                const col = header.column
-                const pinned = col.getIsPinned() === 'left'
-                const m = meta(col.id)
-                const isInfo = INFO_IDS.includes(col.id)
-                const style = pinned ? { left: col.getStart('left'), zIndex: 7 } : undefined
-                const last = col.id === INFO_IDS[INFO_IDS.length - 1]
+              {infoCols.map((c) => {
+                const last = c.id === infoOrder[infoOrder.length - 1]
                 return (
                   <th
-                    key={col.id}
-                    data-month={m.month || undefined}
-                    className={`${pinned ? 'pinned' : ''} ${last ? 'pinned-shadow' : ''} ${m.num ? 'cell-num' : ''} ${m.month && isPastMonth(m.month) ? 'svc-past' : ''}`}
-                    style={style}
-                    onDragOver={(e) => isInfo && e.preventDefault()}
-                    onDrop={(e) => {
-                      if (!isInfo) return
-                      reorder(e.dataTransfer.getData('text/plain'), col.id)
-                    }}
+                    key={c.id}
+                    className={`pinned ${last ? 'pinned-shadow' : ''} ${c.num ? 'cell-num' : ''} ${dragCol === c.id ? 'drag-source' : ''}`}
+                    style={{ left: lefts[c.id], zIndex: 8 }}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => onDrop(c.id)}
                   >
                     <div className="svc-th">
-                      {isInfo && (
-                        <span
-                          className="th-grip" draggable
-                          onDragStart={(e) => {
-                            e.dataTransfer.effectAllowed = 'move'
-                            e.dataTransfer.setData('text/plain', col.id)
-                          }}
-                          title="Drag to reorder"
-                        >
-                          <GripVertical size={12} />
-                        </span>
-                      )}
-                      <span className="svc-th-label">{col.columnDef.header}</span>
-                    </div>
-                    {col.getCanResize() && (
                       <span
-                        className={`resizer ${col.getIsResizing() ? 'active' : ''}`}
-                        onMouseDown={header.getResizeHandler()}
-                        onTouchStart={header.getResizeHandler()}
-                      />
-                    )}
+                        className="th-grip" draggable
+                        onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; setDragCol(c.id) }}
+                        onDragEnd={() => setDragCol(null)}
+                        title="Drag to reorder"
+                      >
+                        <GripVertical size={12} />
+                      </span>
+                      <span className="svc-th-label">{c.label}</span>
+                    </div>
+                    <span className="resizer" onMouseDown={(e) => startResize(c.id, e)} />
                   </th>
                 )
               })}
+              {SERVICE_MONTHS.map((m) => (
+                <th key={m.key} data-month={m.key} className={`cell-num svc-month ${isPastMonth(m.key) ? 'svc-past' : ''}`}>
+                  {m.label}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {table.getRowModel().rows.map((row) => {
-              const line = row.original
+            {lines.map((line) => {
               const c = calc[line.id]
+              const over = c.reforecast > c.budget + 0.5
               return (
                 <tr key={line.id}>
-                  {leaf.map((col) => {
-                    const pinned = col.getIsPinned() === 'left'
-                    const m = meta(col.id)
-                    const last = col.id === INFO_IDS[INFO_IDS.length - 1]
-                    const style = pinned ? { left: col.getStart('left'), zIndex: 6 } : undefined
-                    const over = col.id === 'reforecast' && c.reforecast > c.budget + 0.5
-                    if (m.month) {
-                      const mv = c.monthly[m.month]
-                      return (
-                        <td
-                          key={col.id}
-                          className={`cell-num svc-month ${isPastMonth(m.month) ? 'svc-past' : ''} ${mv.closed ? 'svc-closed' : ''}`}
-                        >
-                          <button className="svc-cell-btn" onClick={() => onOpenMonth(line, m.month)}>
-                            {mv.effective ? formatMoney(mv.effective) : '-'}
-                          </button>
-                        </td>
-                      )
-                    }
+                  {infoCols.map((ic) => {
+                    const last = ic.id === infoOrder[infoOrder.length - 1]
                     return (
                       <td
-                        key={col.id}
-                        className={`${pinned ? 'pinned' : ''} ${last ? 'pinned-shadow' : ''} ${m.num ? 'cell-num' : ''} ${over ? 'svc-over' : ''}`}
-                        style={style}
+                        key={ic.id}
+                        className={`pinned ${last ? 'pinned-shadow' : ''} ${ic.num ? 'cell-num' : ''} ${ic.id === 'reforecast' && over ? 'svc-over' : ''}`}
+                        style={{ left: lefts[ic.id], zIndex: 6 }}
                       >
-                        <span className="cell-pad" title={col.id === 'line' ? line.name : undefined}>
-                          {cellContent(col.id, line)}
-                        </span>
+                        {infoCell(ic.id, line, c)}
+                      </td>
+                    )
+                  })}
+                  {SERVICE_MONTHS.map((m) => {
+                    const mv = c.monthly[m.key]
+                    return (
+                      <td
+                        key={m.key}
+                        className={`cell-num svc-month ${isPastMonth(m.key) ? 'svc-past' : ''} ${mv.closed ? 'svc-closed' : ''}`}
+                      >
+                        <button className="svc-cell-btn" onClick={() => onOpenMonth(line, m.key)}>
+                          {mv.effective ? formatMoney(mv.effective) : '-'}
+                        </button>
                       </td>
                     )
                   })}

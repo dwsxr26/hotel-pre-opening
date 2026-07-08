@@ -7,7 +7,7 @@ import { filterItems } from './lib/filtering'
 import { addCategory, fetchCategories } from './data/categories'
 import { addDepartment, fetchDepartments } from './data/departments'
 import { DEPARTMENTS } from './lib/departments'
-import { ensureMyProfile, fetchProfiles, setMyPassword, updateMyProfile } from './data/profiles'
+import { ensureMyProfile, fetchProfiles, setMyPassword, updateMyProfile, setAdmin } from './data/profiles'
 import { fetchAttachments, removeLink, signedUrl, uploadFiles } from './data/attachments'
 import { DEFAULT_COLUMN_ORDER } from './lib/constants'
 import { displayName } from './lib/people'
@@ -19,10 +19,11 @@ import Summary from './components/Summary'
 import ProfileModal from './components/ProfileModal'
 import InviteModal from './components/InviteModal'
 import ServicesTab from './components/services/ServicesTab'
+import TeamModal from './components/TeamModal'
 import {
   fetchServiceLines, fetchServiceEntries, fetchServiceCloses,
   addServiceEntry, updateServiceEntry, deleteServiceEntry, uploadServiceFile, serviceSignedUrl,
-  setMonthClose, clearMonthClose,
+  setMonthClose, clearMonthClose, updateServiceLine,
 } from './data/services'
 import { SERVICE_MONTHS, computeLine } from './lib/serviceCalc'
 import { formatMoney } from './lib/format'
@@ -58,6 +59,7 @@ export default function App() {
   const [myProfile, setMyProfile] = useState(null)
   const [showProfile, setShowProfile] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
+  const [showTeam, setShowTeam] = useState(false)
   const [dataLoading, setDataLoading] = useState(true)
   const [tab, setTab] = useState('orders')
 
@@ -123,6 +125,20 @@ export default function App() {
   const refreshServiceCloses = useCallback(
     () => fetchServiceCloses().then(setServiceCloses).catch((e) => console.error('Closes reload failed', e)),
     [],
+  )
+  const onServiceLineUpdate = useCallback(
+    async (id, patch) => {
+      const prev = serviceLines
+      setServiceLines((cur) => cur.map((l) => (l.id === id ? { ...l, ...patch } : l)))
+      try {
+        await updateServiceLine(id, patch)
+      } catch (e) {
+        console.error('Line update failed', e)
+        setServiceLines(prev)
+        alert('Could not save. Admins only — or try again.')
+      }
+    },
+    [serviceLines],
   )
   const onServiceEntryAdd = useCallback(
     async (entry) => {
@@ -433,6 +449,16 @@ export default function App() {
     return created
   }, [])
 
+  const onSetAdmin = useCallback(async (userId, isAdmin) => {
+    try {
+      const updated = await setAdmin(userId, isAdmin)
+      if (updated) setProfiles((cur) => cur.map((p) => (p.user_id === userId ? updated : p)))
+    } catch (e) {
+      console.error('Set admin failed', e)
+      alert('Could not update admin status (admins only).')
+    }
+  }, [])
+
   const onSaveProfile = useCallback(async ({ first_name, last_name, password }) => {
     let saved = await updateMyProfile({ first_name, last_name })
     if (password) saved = await setMyPassword(password)
@@ -454,8 +480,10 @@ export default function App() {
       <Header
         user={user}
         profile={myProfile}
+        isAdmin={!!myProfile?.is_admin}
         onEditName={() => setShowProfile(true)}
         onInvite={() => setShowInvite(true)}
+        onTeam={() => setShowTeam(true)}
       />
       {tab === 'orders' && (
         <Metrics
@@ -526,6 +554,9 @@ export default function App() {
           lines={serviceLines}
           entriesByLine={serviceEntries}
           closesByLine={serviceCloses}
+          isAdmin={!!myProfile?.is_admin}
+          people={people}
+          onLineUpdate={onServiceLineUpdate}
           onEntryAdd={onServiceEntryAdd}
           onEntryUpdate={onServiceEntryUpdate}
           onEntryDelete={onServiceEntryDelete}
@@ -550,6 +581,14 @@ export default function App() {
         />
       )}
       {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
+      {showTeam && (
+        <TeamModal
+          profiles={profiles}
+          myUserId={user.id}
+          onSetAdmin={onSetAdmin}
+          onClose={() => setShowTeam(false)}
+        />
+      )}
     </div>
   )
 }

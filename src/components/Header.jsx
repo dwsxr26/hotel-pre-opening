@@ -1,8 +1,8 @@
-import { UserPen, UserPlus } from 'lucide-react'
+import { Users, UserPen, UserPlus } from 'lucide-react'
 import { supabase } from '../supabase'
 import { displayName } from '../lib/people'
 
-export default function Header({ user, profile, onEditName, onInvite }) {
+export default function Header({ user, profile, isAdmin, onEditName, onInvite, onTeam }) {
   const name = displayName(profile) || user?.email
   return (
     <div className="header">
@@ -15,6 +15,11 @@ export default function Header({ user, profile, onEditName, onInvite }) {
         </div>
       </div>
       <div className="header-actions">
+        {isAdmin && (
+          <button className="btn" onClick={onTeam} title="Manage team &amp; admins">
+            <Users size={15} /> Team
+          </button>
+        )}
         <button className="btn" onClick={onInvite} title="Invite teammates">
           <UserPlus size={15} /> Invite
         </button>

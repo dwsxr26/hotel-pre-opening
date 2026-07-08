@@ -1,6 +1,6 @@
 import { supabase } from '../supabase'
 
-const COLUMNS = 'user_id, email, first_name, last_name, password_set'
+const COLUMNS = 'user_id, email, first_name, last_name, password_set, is_admin'
 
 export async function fetchProfiles() {
   const { data, error } = await supabase
@@ -29,6 +29,18 @@ export async function ensureMyProfile() {
   const { data: inserted, error: insErr } = await supabase.from('profiles').insert(row).select(COLUMNS).single()
   if (insErr) throw insErr
   return inserted
+}
+
+// Admins only (enforced by RLS): promote/demote another user.
+export async function setAdmin(userId, isAdmin) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ is_admin: isAdmin })
+    .eq('user_id', userId)
+    .select(COLUMNS)
+    .single()
+  if (error) throw error
+  return data
 }
 
 export async function updateMyProfile({ first_name, last_name }) {

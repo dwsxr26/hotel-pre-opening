@@ -3,8 +3,6 @@ import { Download, Paperclip, Plus, Trash2, X } from 'lucide-react'
 import { formatMoney } from '../../lib/format'
 import { SERVICE_MONTHS } from '../../lib/serviceCalc'
 
-const grossOf = (e) => (Number(e.amount_ex_vat) || 0) * (1 + (Number(e.vat_pct) || 0) / 100)
-
 // Editable entry row. Inputs are controlled so a blocked (over-budget) edit
 // can revert cleanly; commit happens on blur.
 function EntryRow({ entry, onUpdate, onDelete, onAttach, onDownload }) {
@@ -72,14 +70,13 @@ function EntryRow({ entry, onUpdate, onDelete, onAttach, onDownload }) {
 // Add/edit the forecast breakdown and invoices for one line in one month, and
 // close the month (cancel unused / roll forward).
 export default function MonthEntriesModal({
-  line, monthKey, monthLabel, entries, incl, disposition,
+  line, monthKey, monthLabel, entries, disposition,
   onAdd, onUpdate, onDelete, onAttach, onDownload, onCloseMonth, onReopenMonth, onClose,
 }) {
   const [busy, setBusy] = useState(false)
   const forecast = entries.filter((e) => e.type === 'forecast')
   const invoices = entries.filter((e) => e.type === 'invoice')
   const sumEx = (arr) => arr.reduce((s, e) => s + (Number(e.amount_ex_vat) || 0), 0)
-  const sumView = (arr) => arr.reduce((s, e) => s + (incl ? grossOf(e) : Number(e.amount_ex_vat) || 0), 0)
 
   const unused = Math.max(0, sumEx(forecast) - sumEx(invoices))
   const idx = SERVICE_MONTHS.findIndex((m) => m.key === monthKey)
@@ -99,7 +96,6 @@ export default function MonthEntriesModal({
     <div className="me-section">
       <div className="me-section-hd">
         <span>{title}</span>
-        <span className="me-section-sum">{formatMoney(sumView(rows))}{incl ? ' incl' : ' ex'} VAT</span>
       </div>
       <div className="me-head">
         <span>Description</span><span className="me-num">Ex VAT</span><span className="me-vat">VAT %</span>
