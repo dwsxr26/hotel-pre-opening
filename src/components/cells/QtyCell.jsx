@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 
-// Inline numeric editor for quantity. Committed on blur/Enter, no confirmation.
-export default function QtyCell({ value, onEdit }) {
+// Inline numeric editor. Committed on blur/Enter, no confirmation. `field` is
+// the item column to patch (default 'qty').
+export default function QtyCell({ value, field = 'qty', onEdit }) {
   const [draft, setDraft] = useState(value ?? 0)
   const dirty = useRef(false)
 
@@ -13,7 +14,7 @@ export default function QtyCell({ value, onEdit }) {
     dirty.current = false
     const next = Number(draft) || 0
     if (next === (Number(value) || 0)) return
-    onEdit({ qty: next })
+    onEdit({ [field]: next })
   }
 
   return (

@@ -61,7 +61,11 @@ export default function App() {
   const [showInvite, setShowInvite] = useState(false)
   const [showTeam, setShowTeam] = useState(false)
   const [dataLoading, setDataLoading] = useState(true)
-  const [tab, setTab] = useState('orders')
+  const [tab, setTabState] = useState(() => localStorage.getItem('florence.tab') || 'orders')
+  const setTab = useCallback((t) => {
+    localStorage.setItem('florence.tab', t)
+    setTabState(t)
+  }, [])
 
   const { prefs: view, update: setView } = useViewPrefs(!!user, DEFAULT_VIEW)
 

@@ -195,6 +195,25 @@ export default function OrdersTable({
         ),
       },
       {
+        accessorKey: 'vat_pct',
+        header: 'VAT %',
+        size: 72,
+        meta: { align: 'num', filter: 'none' },
+        enableColumnFilter: false,
+        cell: ({ row, getValue }) => (
+          <QtyCell value={getValue()} field="vat_pct" onEdit={(patch) => onEdit(row.original.id, patch)} />
+        ),
+      },
+      {
+        id: 'unit_incl',
+        header: 'Unit incl. VAT',
+        accessorFn: (r) => (Number(r.unit_price) || 0) * (1 + (Number(r.vat_pct) || 0) / 100),
+        size: 120,
+        meta: { align: 'num', filter: 'none' },
+        enableColumnFilter: false,
+        cell: ({ getValue }) => <span className="cell-pad cell-num">{formatMoney(getValue())}</span>,
+      },
+      {
         id: 'total',
         header: 'Total',
         accessorFn: (r) => lineTotal(r),

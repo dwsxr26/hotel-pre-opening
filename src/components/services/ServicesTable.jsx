@@ -45,10 +45,15 @@ export default function ServicesTable({ rows, totals, sort, onSortToggle, view, 
 
   useEffect(() => {
     if (didScroll.current || rows.length === 0 || !scrollRef.current) return
+    const el = scrollRef.current
     const idx = SERVICE_MONTHS.findIndex((m) => m.key === '2026-07-01')
-    if (idx > 0) scrollRef.current.scrollLeft = idx * MONTH_W
     didScroll.current = true
-  }, [rows])
+    if (idx <= 0) return
+    // Defer until the table has laid out, else scrollLeft gets clamped to a
+    // not-yet-wide-enough scrollWidth. Target = the Jul-26 column's natural x
+    // minus the pinned block, which equals idx * month width.
+    requestAnimationFrame(() => requestAnimationFrame(() => { el.scrollLeft = idx * MONTH_W * (zoom || 1) }))
+  }, [rows, zoom])
 
   const infoOrder = useMemo(() => {
     const saved = view.svcOrder
