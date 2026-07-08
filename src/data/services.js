@@ -1,7 +1,7 @@
 import { supabase } from '../supabase'
 
 const BUCKET = 'attachments'
-const ENTRY_COLS = 'id, line_id, month, type, title, amount_ex_vat, vat_pct, file_path, file_name'
+const ENTRY_COLS = 'id, line_id, month, type, title, amount_ex_vat, vat_pct, file_path, file_name, auto_from'
 
 export async function fetchServiceLines() {
   const { data, error } = await supabase
@@ -87,5 +87,16 @@ export async function setMonthClose(line_id, month, disposition) {
 
 export async function clearMonthClose(line_id, month) {
   const { error } = await supabase.from('service_month_close').delete().eq('line_id', line_id).eq('month', month)
+  if (error) throw error
+}
+
+// Remove forecast entries auto-created by closing `sourceMonth` (roll-forward /
+// reductions), so reopening that month reverses them.
+export async function deleteAutoEntries(line_id, sourceMonth) {
+  const { error } = await supabase
+    .from('service_entries')
+    .delete()
+    .eq('line_id', line_id)
+    .eq('auto_from', sourceMonth)
   if (error) throw error
 }

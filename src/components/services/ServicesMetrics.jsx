@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Minus, Plus } from 'lucide-react'
 import { formatMoney } from '../../lib/format'
 import { aggregate } from '../../lib/serviceCalc'
 
@@ -45,7 +45,7 @@ function MiniTable({ label, rows, totals }) {
 }
 
 // Collapsible "Metrics" for Services: summary by Department and by Owner.
-export default function ServicesMetrics({ lines, entriesByLine, closesByLine, incl, open, onToggle }) {
+export default function ServicesMetrics({ lines, entriesByLine, closesByLine, incl, open, onToggle, zoom = 1, onZoom }) {
   const { byDept, byOwner, totals } = useMemo(() => {
     const group = (keyFn) => {
       const groups = {}
@@ -63,15 +63,22 @@ export default function ServicesMetrics({ lines, entriesByLine, closesByLine, in
 
   return (
     <div className="card" style={{ marginBottom: 16 }}>
-      <button className="collapse-hd" onClick={onToggle}>
-        <ChevronDown size={16} className={`collapse-chev ${open ? 'open' : ''}`} />
-        <span className="card-hd" style={{ padding: 0, border: 0 }}>Metrics</span>
-        <span className="collapse-hint">
-          {formatMoney(totals.reforecast)} reforecast · {open ? 'Hide' : 'Show'}
-        </span>
-      </button>
+      <div className="metrics-hd">
+        <button className="collapse-hd" onClick={onToggle} style={{ flex: 1 }}>
+          <ChevronDown size={16} className={`collapse-chev ${open ? 'open' : ''}`} />
+          <span className="card-hd" style={{ padding: 0, border: 0 }}>Metrics</span>
+          <span className="collapse-hint">{formatMoney(totals.reforecast)} reforecast · {open ? 'Hide' : 'Show'}</span>
+        </button>
+        {open && onZoom && (
+          <div className="zoomer" title="Zoom the metrics" onClick={(e) => e.stopPropagation()}>
+            <button className="btn icon-btn" onClick={() => onZoom(-0.1)} disabled={zoom <= 0.6} aria-label="Zoom out"><Minus size={14} /></button>
+            <span className="zoom-label">{Math.round(zoom * 100)}%</span>
+            <button className="btn icon-btn" onClick={() => onZoom(0.1)} disabled={zoom >= 1.3} aria-label="Zoom in"><Plus size={14} /></button>
+          </div>
+        )}
+      </div>
       {open && (
-        <div className="summary-pad" style={{ paddingTop: 0, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        <div className="summary-pad" style={{ paddingTop: 0, display: 'flex', gap: 16, flexWrap: 'wrap', zoom }}>
           <MiniTable label="Department" rows={byDept} totals={totals} />
           <MiniTable label="Owner" rows={byOwner} totals={totals} />
         </div>

@@ -382,9 +382,12 @@ a.btn { text-decoration: none; }
 .me-add { height: 30px; font-size: 12px; margin-top: 6px; }
 .me-footer { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
 .me-close-actions, .me-closed { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.me-unused { flex: 1; font-size: 13px; color: var(--muted-fg); }
+.me-status { font-size: 13px; color: var(--muted-fg); margin-bottom: 8px; }
 .me-closed span { flex: 1; font-size: 13px; color: hsl(140 40% 32%); }
 .me-close-actions .btn, .me-closed .btn { height: 32px; }
+.me-viewbar { display: flex; justify-content: flex-end; margin-top: 12px; }
+.metrics-hd { display: flex; align-items: center; }
+.metrics-hd .zoomer { padding-right: 12px; }
 
 /* team & admins modal */
 .team-list { margin-top: 8px; max-height: 360px; overflow: auto; }

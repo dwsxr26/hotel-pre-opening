@@ -16,13 +16,15 @@ const monthLabel = (key) => SERVICE_MONTHS.find((m) => m.key === key)?.label || 
 
 export default function ServicesTab({
   lines, entriesByLine, closesByLine, isAdmin, people, onLineUpdate,
-  onEntryAdd, onEntryUpdate, onEntryDelete, onEntryAttach, onDownload, onCloseMonth, onReopenMonth,
+  onEntryAdd, onEntryUpdate, onEntryDelete, onEntryAttach, onDownload, onMonthSave, onMonthReopen,
 }) {
   const { prefs: view, update: setView } = useViewPrefs(true, DEFAULT_SERVICES_VIEW, 'services')
   const [open, setOpen] = useState(null) // { lineId, month }
   const incl = view.inclVat === true
   const zoom = view.zoom || 1
   const setZoom = (z) => setView({ zoom: Math.min(1.5, Math.max(0.6, Math.round(z * 10) / 10)) })
+  const metricsZoom = view.metricsZoom || 1
+  const setMetricsZoom = (z) => setView({ metricsZoom: Math.min(1.3, Math.max(0.6, Math.round(z * 10) / 10)) })
   const filters = useMemo(() => view.svcFilters || {}, [view.svcFilters])
   const sort = useMemo(() => view.svcSort || { key: '', dir: 'asc' }, [view.svcSort])
 
@@ -115,6 +117,8 @@ export default function ServicesTab({
         incl={incl}
         open={view.metricsOpen === true}
         onToggle={() => setView({ metricsOpen: !(view.metricsOpen === true) })}
+        zoom={metricsZoom}
+        onZoom={(d) => setMetricsZoom(metricsZoom + d)}
       />
 
       <div className="svc-toolbar">
@@ -169,14 +173,16 @@ export default function ServicesTab({
           monthKey={open.month}
           monthLabel={monthLabel(open.month)}
           entries={openEntries}
+          lineEntries={entriesByLine[open.lineId] || []}
+          closesForLine={closesByLine[open.lineId] || {}}
           disposition={closesByLine[open.lineId]?.[open.month]}
           onAdd={onEntryAdd}
           onUpdate={onEntryUpdate}
           onDelete={onEntryDelete}
           onAttach={onEntryAttach}
           onDownload={onDownload}
-          onCloseMonth={(disposition) => onCloseMonth(open.lineId, open.month, disposition)}
-          onReopenMonth={() => onReopenMonth(open.lineId, open.month)}
+          onSave={(plan) => onMonthSave(open.lineId, open.month, plan)}
+          onReopen={() => onMonthReopen(open.lineId, open.month)}
           onClose={() => setOpen(null)}
         />
       )}

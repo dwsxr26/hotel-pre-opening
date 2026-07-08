@@ -23,7 +23,7 @@ import TeamModal from './components/TeamModal'
 import {
   fetchServiceLines, fetchServiceEntries, fetchServiceCloses,
   addServiceEntry, updateServiceEntry, deleteServiceEntry, uploadServiceFile, serviceSignedUrl,
-  setMonthClose, clearMonthClose, updateServiceLine,
+  setMonthClose, clearMonthClose, updateServiceLine, deleteAutoEntries,
 } from './data/services'
 import { SERVICE_MONTHS, computeLine } from './lib/serviceCalc'
 import { formatMoney } from './lib/format'
@@ -223,46 +223,48 @@ export default function App() {
     }
   }, [])
 
-  // Close a month: 'cancelled' drops the unused (reforecast falls), 'rolled'
-  // moves the unused forecast into the next month.
-  const onServiceCloseMonth = useCallback(
-    async (lineId, month, disposition) => {
+  // Save a month close. plan = { disposition, roll?: {month, amount},
+  // adjustments?: [{month, amount}] }. Roll/adjustment forecast entries are
+  // tagged auto_from = the closed month so a reopen can reverse them.
+  const onServiceMonthSave = useCallback(
+    async (lineId, month, plan) => {
+      const label = SERVICE_MONTHS.find((m) => m.key === month)?.label || month
       try {
-        if (disposition === 'rolled') {
-          const rows = (serviceEntries[lineId] || []).filter((e) => e.month === month)
-          const fSum = rows.filter((e) => e.type === 'forecast').reduce((s, e) => s + (Number(e.amount_ex_vat) || 0), 0)
-          const iSum = rows.filter((e) => e.type === 'invoice').reduce((s, e) => s + (Number(e.amount_ex_vat) || 0), 0)
-          const unused = Math.max(0, fSum - iSum)
-          const idx = SERVICE_MONTHS.findIndex((m) => m.key === month)
-          const next = SERVICE_MONTHS[idx + 1]
-          if (unused > 0 && next) {
-            await addServiceEntry({
-              line_id: lineId, month: next.key, type: 'forecast',
-              title: `Rolled forward from ${SERVICE_MONTHS[idx].label}`, amount_ex_vat: unused, vat_pct: 22,
-            })
-          }
+        if (plan.roll && plan.roll.month && Math.round(plan.roll.amount) !== 0) {
+          await addServiceEntry({
+            line_id: lineId, month: plan.roll.month, type: 'forecast',
+            title: `Rolled forward from ${label}`, amount_ex_vat: Math.round(plan.roll.amount), vat_pct: 22, auto_from: month,
+          })
         }
-        await setMonthClose(lineId, month, disposition)
+        for (const adj of plan.adjustments || []) {
+          if (Math.round(adj.amount) === 0) continue
+          await addServiceEntry({
+            line_id: lineId, month: adj.month, type: 'forecast',
+            title: `Adjustment from ${label}`, amount_ex_vat: Math.round(adj.amount), vat_pct: 22, auto_from: month,
+          })
+        }
+        await setMonthClose(lineId, month, plan.disposition || 'closed')
         await Promise.all([refreshServiceEntries(), refreshServiceCloses()])
       } catch (e) {
-        console.error('Close month failed', e)
-        alert('Could not close the month. Please try again.')
+        console.error('Month save failed', e)
+        alert('Could not save the month close. Please try again.')
       }
     },
-    [serviceEntries, refreshServiceEntries, refreshServiceCloses],
+    [refreshServiceEntries, refreshServiceCloses],
   )
 
-  const onServiceReopenMonth = useCallback(
+  const onServiceMonthReopen = useCallback(
     async (lineId, month) => {
       try {
+        await deleteAutoEntries(lineId, month)
         await clearMonthClose(lineId, month)
-        await refreshServiceCloses()
+        await Promise.all([refreshServiceEntries(), refreshServiceCloses()])
       } catch (e) {
         console.error('Reopen failed', e)
         alert('Could not reopen the month.')
       }
     },
-    [refreshServiceCloses],
+    [refreshServiceEntries, refreshServiceCloses],
   )
 
   // Team members shown in the Owner dropdown: only signed-up users (by their
@@ -566,8 +568,8 @@ export default function App() {
           onEntryDelete={onServiceEntryDelete}
           onEntryAttach={onServiceEntryAttach}
           onDownload={onServiceDownload}
-          onCloseMonth={onServiceCloseMonth}
-          onReopenMonth={onServiceReopenMonth}
+          onMonthSave={onServiceMonthSave}
+          onMonthReopen={onServiceMonthReopen}
         />
       ) : tab === 'owner' ? (
         <Summary items={items} departments={departments} groupKey="owner" groupLabel="Owner" blankLabel="Unassigned" />

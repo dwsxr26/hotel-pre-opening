@@ -227,8 +227,15 @@ export default function ServicesTable({ rows, totals, sort, onSortToggle, view, 
                   })}
                   {SERVICE_MONTHS.map((m) => {
                     const mv = c.monthly[m.key]
+                    // Light-blue fill showing how much of the forecast is invoiced.
+                    const pct = mv.forecast > 0 ? Math.max(0, Math.min(1, mv.invoiced / mv.forecast)) : (mv.invoiced > 0 ? 1 : 0)
+                    const bg = pct > 0 ? `linear-gradient(90deg, hsl(205 85% 87%) ${pct * 100}%, transparent ${pct * 100}%)` : undefined
                     return (
-                      <td key={m.key} className={`cell-num svc-month ${isPastMonth(m.key) ? 'svc-past' : ''} ${mv.closed ? 'svc-closed' : ''}`}>
+                      <td
+                        key={m.key}
+                        className={`cell-num svc-month ${isPastMonth(m.key) ? 'svc-past' : ''} ${mv.closed ? 'svc-closed' : ''}`}
+                        style={bg ? { background: bg } : undefined}
+                      >
                         <button className="svc-cell-btn" onClick={() => onOpenMonth(line, m.key)}>
                           {mv.effective ? formatMoney(mv.effective) : '-'}
                         </button>
