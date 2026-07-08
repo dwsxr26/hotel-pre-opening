@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Exported evidence files (downloaded locally, not source)
+evidence/
+
 # Env files (secrets)
 .env
 .env.local
