@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
+import { Minus, Plus } from 'lucide-react'
 import { useViewPrefs } from '../../hooks/useViewPrefs'
 import { SERVICE_MONTHS } from '../../lib/serviceCalc'
 import ServicesMetrics from './ServicesMetrics'
 import ServicesTable from './ServicesTable'
 import MonthEntriesModal from './MonthEntriesModal'
 
-const DEFAULT_SERVICES_VIEW = { columnSizing: {}, columnOrder: [], inclVat: false, metricsOpen: false }
+const DEFAULT_SERVICES_VIEW = { svcWidths: {}, svcOrder: [], inclVat: false, metricsOpen: false, zoom: 1 }
 const monthLabel = (key) => SERVICE_MONTHS.find((m) => m.key === key)?.label || key
 
 // Services module. VAT toggle + Metrics + the budget grid, with per-user column
@@ -18,6 +19,8 @@ export default function ServicesTab({
   const { prefs: view, update: setView } = useViewPrefs(true, DEFAULT_SERVICES_VIEW, 'services')
   const [open, setOpen] = useState(null) // { lineId, month }
   const incl = view.inclVat === true
+  const zoom = view.zoom || 1
+  const setZoom = (z) => setView({ zoom: Math.min(1.5, Math.max(0.6, Math.round(z * 10) / 10)) })
 
   const openLine = open && lines.find((l) => l.id === open.lineId)
   const openEntries = useMemo(() => {
@@ -43,6 +46,16 @@ export default function ServicesTab({
           <button className={`seg-btn ${incl ? 'on' : ''}`} onClick={() => setView({ inclVat: true })}>Incl. VAT</button>
         </div>
         <span className="row-count">Click a month cell to add forecast lines &amp; invoices. Scroll left for history.</span>
+        <div className="spacer" />
+        <div className="zoomer" title="Zoom the table">
+          <button className="btn icon-btn" onClick={() => setZoom(zoom - 0.1)} disabled={zoom <= 0.6} aria-label="Zoom out">
+            <Minus size={15} />
+          </button>
+          <span className="zoom-label">{Math.round(zoom * 100)}%</span>
+          <button className="btn icon-btn" onClick={() => setZoom(zoom + 0.1)} disabled={zoom >= 1.5} aria-label="Zoom in">
+            <Plus size={15} />
+          </button>
+        </div>
       </div>
 
       <ServicesTable
@@ -55,6 +68,7 @@ export default function ServicesTab({
         isAdmin={isAdmin}
         people={people}
         onLineUpdate={onLineUpdate}
+        zoom={zoom}
         onOpenMonth={(line, month) => setOpen({ lineId: line.id, month })}
       />
 

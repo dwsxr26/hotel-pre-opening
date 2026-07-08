@@ -67,6 +67,33 @@ function EntryRow({ entry, onUpdate, onDelete, onAttach, onDownload }) {
   )
 }
 
+// Blank starter row shown when a section has no entries yet. Commits on
+// amount blur (if anything was entered).
+function DraftRow({ onCommit }) {
+  const [title, setTitle] = useState('')
+  const [amount, setAmount] = useState('')
+  const [vat, setVat] = useState(22)
+  const total = (Number(amount) || 0) * (1 + (Number(vat) || 0) / 100)
+  const maybeCommit = () => {
+    const a = Number(amount) || 0
+    if (!title.trim() && a === 0) return
+    onCommit({ title: title.trim(), amount_ex_vat: a, vat_pct: Number(vat) || 0 })
+    setTitle('')
+    setAmount('')
+    setVat(22)
+  }
+  return (
+    <div className="me-row">
+      <input className="me-title" value={title} placeholder="Description" onChange={(e) => setTitle(e.target.value)} />
+      <input className="me-num" type="number" step="any" value={amount} placeholder="0" onChange={(e) => setAmount(e.target.value)} onBlur={maybeCommit} />
+      <input className="me-vat" type="number" step="any" value={vat} onChange={(e) => setVat(e.target.value)} onBlur={maybeCommit} />
+      <span className="me-total">{formatMoney(total)}</span>
+      <span className="me-file" />
+      <span className="me-x" />
+    </div>
+  )
+}
+
 // Add/edit the forecast breakdown and invoices for one line in one month, and
 // close the month (cancel unused / roll forward).
 export default function MonthEntriesModal({
@@ -83,10 +110,10 @@ export default function MonthEntriesModal({
   const nextMonth = SERVICE_MONTHS[idx + 1]
   const closed = !!disposition
 
-  const add = async (type) => {
+  const add = async (type, extra = {}) => {
     setBusy(true)
     try {
-      await onAdd({ line_id: line.id, month: monthKey, type, title: '', amount_ex_vat: 0, vat_pct: 22 })
+      await onAdd({ line_id: line.id, month: monthKey, type, title: '', amount_ex_vat: 0, vat_pct: 22, ...extra })
     } finally {
       setBusy(false)
     }
@@ -101,7 +128,7 @@ export default function MonthEntriesModal({
         <span>Description</span><span className="me-num">Ex VAT</span><span className="me-vat">VAT %</span>
         <span className="me-total">Total</span><span className="me-file" /><span className="me-x" />
       </div>
-      {rows.length === 0 && <div className="me-empty">None yet</div>}
+      {rows.length === 0 && <DraftRow onCommit={(vals) => add(type, vals)} />}
       {rows.map((e) => (
         <EntryRow
           key={`${e.id}:${e.amount_ex_vat}:${e.vat_pct}:${e.title}:${e.file_path || ''}`}

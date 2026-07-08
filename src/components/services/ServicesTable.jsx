@@ -17,8 +17,33 @@ const INFO_DEFS = [
 ]
 const INFO_IDS = INFO_DEFS.map((d) => d.id)
 const MONTH_W = 96
+const clampW = (w) => Math.max(80, Math.min(500, w))
 
-export default function ServicesTable({ lines, entriesByLine, closesByLine, incl, view, setView, onOpenMonth, isAdmin, people, onLineUpdate }) {
+// Budget: formatted display; admins click to edit (ex-VAT).
+function BudgetCell({ valueEx, display, onCommit }) {
+  const [editing, setEditing] = useState(false)
+  const [v, setV] = useState(valueEx)
+  if (!editing) {
+    return (
+      <span
+        className="cell-pad cell-num editable" title="Click to edit budget"
+        onClick={() => { setV(valueEx); setEditing(true) }}
+      >
+        {display}
+      </span>
+    )
+  }
+  return (
+    <input
+      className="cell-input cell-num" type="number" step="any" autoFocus value={v}
+      onChange={(e) => setV(e.target.value)}
+      onBlur={() => { setEditing(false); const n = Number(v) || 0; if (n !== Number(valueEx)) onCommit(n) }}
+      onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') setEditing(false) }}
+    />
+  )
+}
+
+export default function ServicesTable({ lines, entriesByLine, closesByLine, incl, view, setView, onOpenMonth, isAdmin, people, onLineUpdate, zoom = 1 }) {
   const [drag, setDrag] = useState(null) // live resize: { id, w }
   const [dragCol, setDragCol] = useState(null)
   const scrollRef = useRef(null)
@@ -47,7 +72,7 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
 
   const width = (id) => {
     if (drag && drag.id === id) return drag.w
-    return view.svcWidths?.[id] ?? INFO_DEFS.find((d) => d.id === id)?.w ?? MONTH_W
+    return clampW(view.svcWidths?.[id] ?? INFO_DEFS.find((d) => d.id === id)?.w ?? MONTH_W)
   }
 
   // Cumulative left offsets for the pinned info columns (recomputed each render
@@ -107,14 +132,7 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
     if (id === 'budget') {
       if (!isAdmin) return <span className="cell-pad cell-num">{formatMoney(c.budget)}</span>
       return (
-        <input
-          key={line.budget} className="cell-input cell-num" type="number" step="any" defaultValue={line.budget}
-          title="Budget (ex VAT)"
-          onBlur={(e) => {
-            const v = Number(e.target.value) || 0
-            if (v !== Number(line.budget)) onLineUpdate(line.id, { budget: v })
-          }}
-        />
+        <BudgetCell valueEx={line.budget} display={formatMoney(c.budget)} onCommit={(v) => onLineUpdate(line.id, { budget: v })} />
       )
     }
     if (id === 'spent') return <span className="cell-pad cell-num">{formatMoney(c.spent)}</span>
@@ -136,7 +154,7 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
   return (
     <div className="card overflow-hidden">
       <div className="table-scroll" ref={scrollRef}>
-        <table className="grid svc-grid">
+        <table className="grid svc-grid" style={{ zoom }}>
           <colgroup>
             {infoCols.map((c) => <col key={c.id} style={{ width: c.w }} />)}
             {SERVICE_MONTHS.map((m) => <col key={m.key} style={{ width: MONTH_W }} />)}
@@ -149,7 +167,7 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
                   <th
                     key={c.id}
                     className={`pinned ${last ? 'pinned-shadow' : ''} ${c.num ? 'cell-num' : ''} ${dragCol === c.id ? 'drag-source' : ''}`}
-                    style={{ left: lefts[c.id], zIndex: 8 }}
+                    style={{ left: lefts[c.id], width: c.w, minWidth: c.w, maxWidth: c.w, zIndex: 8 }}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={() => onDrop(c.id)}
                   >
@@ -187,7 +205,7 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
                       <td
                         key={ic.id}
                         className={`pinned ${last ? 'pinned-shadow' : ''} ${ic.num ? 'cell-num' : ''} ${ic.id === 'reforecast' && over ? 'svc-over' : ''}`}
-                        style={{ left: lefts[ic.id], zIndex: 6 }}
+                        style={{ left: lefts[ic.id], width: ic.w, minWidth: ic.w, maxWidth: ic.w, zIndex: 6 }}
                       >
                         {infoCell(ic.id, line, c)}
                       </td>
