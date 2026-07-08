@@ -4,6 +4,10 @@ import { formatMoney } from '../../lib/format'
 import { SERVICE_MONTHS, computeLine } from '../../lib/serviceCalc'
 import ConfirmModal from '../ConfirmModal'
 
+const sumEx = (arr) => arr.reduce((s, e) => s + (Number(e.amount_ex_vat) || 0), 0)
+const newKey = () => `new-${crypto.randomUUID()}`
+
+// Blank starter row shown when a section is empty (commits to the draft on amount blur).
 function DraftRow({ onCommit }) {
   const [title, setTitle] = useState('')
   const [amount, setAmount] = useState('')
@@ -13,75 +17,69 @@ function DraftRow({ onCommit }) {
     const a = Number(amount) || 0
     if (!title.trim() && a === 0) return
     onCommit({ title: title.trim(), amount_ex_vat: a, vat_pct: Number(vat) || 0 })
-    setTitle('')
-    setAmount('')
-    setVat(22)
+    setTitle(''); setAmount(''); setVat(22)
   }
   return (
     <div className="me-row">
       <input className="me-title" value={title} placeholder="Description" onChange={(e) => setTitle(e.target.value)} />
       <input className="me-num" type="number" step="any" value={amount} placeholder="0" onChange={(e) => setAmount(e.target.value)} onBlur={maybeCommit} />
       <input className="me-vat" type="number" step="any" value={vat} onChange={(e) => setVat(e.target.value)} onBlur={maybeCommit} />
-      <span className="me-total">{formatMoney(total)}</span>
-      <span className="me-file" />
-      <span className="me-x" />
+      <span className="me-total">{formatMoney(total)}</span><span className="me-file" /><span className="me-x" />
     </div>
   )
 }
 
-function EntryRow({ entry, locked, onUpdate, onDelete, onAttach, onDownload }) {
-  const [title, setTitle] = useState(entry.title)
-  const [amount, setAmount] = useState(entry.amount_ex_vat)
-  const [vat, setVat] = useState(entry.vat_pct)
-  const commit = async (field, val, reset) => {
-    if (String(val) === String(entry[field] ?? '')) return
-    const ok = await onUpdate(entry.id, { [field]: val })
-    if (ok === false) reset()
-  }
-  const total = (Number(amount) || 0) * (1 + (Number(vat) || 0) / 100)
+// A draft entry row (controlled by the local draft; nothing hits the DB until commit).
+function EntryRow({ item, locked, onChange, onDelete, onAttach, onView }) {
+  const total = (Number(item.amount_ex_vat) || 0) * (1 + (Number(item.vat_pct) || 0) / 100)
   return (
     <div className="me-row">
-      <input className="me-title" value={title} disabled={locked} placeholder="Description" onChange={(e) => setTitle(e.target.value)} onBlur={() => commit('title', title, () => setTitle(entry.title))} />
-      <input className="me-num" type="number" step="any" value={amount} disabled={locked} onChange={(e) => setAmount(e.target.value)} onBlur={() => commit('amount_ex_vat', Number(amount) || 0, () => setAmount(entry.amount_ex_vat))} />
-      <input className="me-vat" type="number" step="any" value={vat} disabled={locked} onChange={(e) => setVat(e.target.value)} onBlur={() => commit('vat_pct', Number(vat) || 0, () => setVat(entry.vat_pct))} />
+      <input className="me-title" value={item.title} disabled={locked} placeholder="Description" onChange={(e) => onChange('title', e.target.value)} />
+      <input className="me-num" type="number" step="any" value={item.amount_ex_vat} disabled={locked} onChange={(e) => onChange('amount_ex_vat', e.target.value)} />
+      <input className="me-vat" type="number" step="any" value={item.vat_pct} disabled={locked} onChange={(e) => onChange('vat_pct', e.target.value)} />
       <span className="me-total">{formatMoney(total)}</span>
-      {entry.type === 'invoice' && entry.file_path ? (
-        <button className="me-file" title={`View ${entry.file_name}`} onClick={() => onDownload(entry.file_path)}><Download size={13} /></button>
-      ) : entry.type === 'invoice' && !locked ? (
+      {item.type === 'invoice' && item.file_path ? (
+        <button className="me-file" title={`View ${item.file_name}`} onClick={() => onView(item.file_path)}><Download size={13} /></button>
+      ) : item.type === 'invoice' && item._file ? (
+        <span className="me-file" title={`${item.file_name} (uploads on save)`}><Paperclip size={13} /></span>
+      ) : item.type === 'invoice' && !locked ? (
         <label className="me-file" title="Attach evidence">
           <Paperclip size={13} />
-          <input type="file" hidden onChange={(e) => { const f = e.target.files[0]; e.target.value = ''; if (f) onAttach(entry, f) }} />
+          <input type="file" hidden onChange={(e) => { const f = e.target.files[0]; e.target.value = ''; if (f) onAttach(f) }} />
         </label>
       ) : (
         <span className="me-file" />
       )}
-      {locked ? <span className="me-x" /> : (
-        <button className="me-x" title="Remove" onClick={() => onDelete(entry)}><Trash2 size={13} /></button>
-      )}
+      {locked ? <span className="me-x" /> : <button className="me-x" title="Remove" onClick={onDelete}><Trash2 size={13} /></button>}
     </div>
   )
 }
 
-const sumEx = (arr) => arr.reduce((s, e) => s + (Number(e.amount_ex_vat) || 0), 0)
-
 export default function MonthEntriesModal({
   line, monthKey, monthLabel, entries, lineEntries, closesForLine, disposition,
-  onAdd, onUpdate, onDelete, onAttach, onDownload, onSave, onReopen, onClose,
+  onCommit, onDownload, onReopen, onClose,
 }) {
-  const [busy, setBusy] = useState(false)
+  const locked = !!disposition
+  // Buffered working copy of this month's entries. Committed only on Done/Save.
+  const [draft, setDraft] = useState(() => entries.map((e) => ({ ...e })))
   const [closing, setClosing] = useState(false)
   const [choice, setChoice] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [showApproval, setShowApproval] = useState(false)
+  const [saving, setSaving] = useState(false)
 
-  const locked = !!disposition
-  const forecast = entries.filter((e) => e.type === 'forecast')
-  const invoices = entries.filter((e) => e.type === 'invoice')
+  const forecast = draft.filter((e) => e.type === 'forecast')
+  const invoices = draft.filter((e) => e.type === 'invoice')
   const forecastEx = sumEx(forecast)
   const invoicedEx = sumEx(invoices)
   const unused = forecastEx - invoicedEx
   const budget = Number(line.budget) || 0
-  const reforecastNow = computeLine(line, lineEntries, closesForLine || {}, false).reforecast
+
+  // Live reforecast using the buffered draft for this month.
+  const simEntries = (lineEntries || [])
+    .filter((e) => e.month !== monthKey)
+    .concat(draft.map((d) => ({ month: monthKey, type: d.type, amount_ex_vat: d.amount_ex_vat, vat_pct: d.vat_pct })))
+  const reforecastNow = computeLine(line, simEntries, closesForLine || {}, false).reforecast
   const overBudget = Math.max(0, reforecastNow - budget)
 
   const idx = SERVICE_MONTHS.findIndex((m) => m.key === monthKey)
@@ -91,20 +89,49 @@ export default function MonthEntriesModal({
     .filter((x) => x.f > 0)
   const futureTotal = futureForecast.reduce((s, x) => s + x.f, 0)
   const canRebalance = futureForecast.length > 0 && overBudget <= futureTotal + 0.5
-
   const invoiceFiles = invoices.filter((e) => e.file_path)
 
-  const add = async (type, extra = {}) => {
-    setBusy(true)
+  // --- draft mutators ---
+  const change = (key, field, val) => setDraft((d) => d.map((x) => (x._key ?? x.id) === key ? { ...x, [field]: val } : x))
+  const addRow = (type, extra = {}) => setDraft((d) => [...d, { _key: newKey(), id: null, type, title: '', amount_ex_vat: 0, vat_pct: 22, file_path: null, file_name: null, ...extra }])
+  const removeRow = (key) => setDraft((d) => d.filter((x) => (x._key ?? x.id) !== key))
+  const attachRow = (key, file) => setDraft((d) => d.map((x) => (x._key ?? x.id) === key ? { ...x, _file: file, file_name: file.name } : x))
+
+  // Diff the draft against the original entries to build the commit ops.
+  const buildOps = () => {
+    const orig = new Map(entries.map((e) => [e.id, e]))
+    const adds = []
+    const updates = []
+    const deletes = []
+    const seen = new Set()
+    for (const d of draft) {
+      if (d.id) {
+        seen.add(d.id)
+        const o = orig.get(d.id)
+        const patch = {}
+        if ((d.title || '') !== (o.title || '')) patch.title = d.title || ''
+        if ((Number(d.amount_ex_vat) || 0) !== (Number(o.amount_ex_vat) || 0)) patch.amount_ex_vat = Number(d.amount_ex_vat) || 0
+        if ((Number(d.vat_pct) || 0) !== (Number(o.vat_pct) || 0)) patch.vat_pct = Number(d.vat_pct) || 0
+        if (d._file || Object.keys(patch).length) updates.push({ id: d.id, patch, _file: d._file })
+      } else {
+        adds.push({ type: d.type, title: d.title || '', amount_ex_vat: Number(d.amount_ex_vat) || 0, vat_pct: Number(d.vat_pct) || 0, _file: d._file })
+      }
+    }
+    for (const o of entries) if (!seen.has(o.id)) deletes.push({ id: o.id, file_path: o.file_path })
+    return { adds, updates, deletes }
+  }
+
+  const commit = async (closePlan = null) => {
+    setSaving(true)
     try {
-      await onAdd({ line_id: line.id, month: monthKey, type, title: '', amount_ex_vat: 0, vat_pct: 22, ...extra })
+      await onCommit(buildOps(), closePlan)
     } finally {
-      setBusy(false)
+      setSaving(false)
+      onClose()
     }
   }
 
-  const doSave = () => {
-    let plan
+  const doClosePlan = () => {
     if (overBudget > 0.5) {
       if (!canRebalance) return
       if (choice === 'reduce-next') {
@@ -116,20 +143,16 @@ export default function MonthEntriesModal({
           adjustments.push({ month: m.key, amount: -take })
           rem -= take
         }
-        plan = { disposition: 'reduced', adjustments }
+        commit({ disposition: 'reduced', adjustments })
       } else if (choice === 'reduce-prorata') {
-        plan = { disposition: 'reduced', adjustments: futureForecast.map((x) => ({ month: x.key, amount: -overBudget * (x.f / futureTotal) })) }
-      } else return
+        commit({ disposition: 'reduced', adjustments: futureForecast.map((x) => ({ month: x.key, amount: -overBudget * (x.f / futureTotal) })) })
+      }
     } else if (unused > 0.5) {
-      if (choice === 'cancel') plan = { disposition: 'cancelled' }
-      else if (choice === 'roll') plan = { disposition: 'rolled', roll: { month: nextMonth?.key, amount: unused } }
-      else return
+      if (choice === 'cancel') commit({ disposition: 'cancelled' })
+      else if (choice === 'roll') commit({ disposition: 'rolled', roll: { month: nextMonth?.key, amount: unused } })
     } else {
-      plan = { disposition: 'closed' }
+      commit({ disposition: 'closed' })
     }
-    onSave(plan)
-    setClosing(false)
-    setChoice(null)
   }
 
   const renderSection = (title, type, rows) => (
@@ -139,25 +162,27 @@ export default function MonthEntriesModal({
         <span>Description</span><span className="me-num">Ex VAT</span><span className="me-vat">VAT %</span>
         <span className="me-total">Total</span><span className="me-file" /><span className="me-x" />
       </div>
-      {rows.length === 0 && !locked && <DraftRow onCommit={(vals) => add(type, vals)} />}
+      {rows.length === 0 && !locked && <DraftRow onCommit={(vals) => addRow(type, vals)} />}
       {rows.length === 0 && locked && <div className="me-empty">None</div>}
-      {rows.map((e) => (
-        <EntryRow
-          key={`${e.id}:${e.amount_ex_vat}:${e.vat_pct}:${e.title}:${e.file_path || ''}`}
-          entry={e} locked={locked} onUpdate={onUpdate} onDelete={setPendingDelete} onAttach={onAttach} onDownload={onDownload}
-        />
-      ))}
+      {rows.map((e) => {
+        const key = e._key ?? e.id
+        return (
+          <EntryRow
+            key={key} item={e} locked={locked}
+            onChange={(f, v) => change(key, f, v)}
+            onDelete={() => setPendingDelete(e)}
+            onAttach={(file) => attachRow(key, file)}
+            onView={onDownload}
+          />
+        )
+      })}
       {!locked && (
-        <button className="btn me-add" disabled={busy} onClick={() => add(type)}>
-          <Plus size={13} /> Add {type === 'invoice' ? 'invoice' : 'forecast line'}
-        </button>
+        <button className="btn me-add" onClick={() => addRow(type)}><Plus size={13} /> Add {type === 'invoice' ? 'invoice' : 'forecast line'}</button>
       )}
     </div>
   )
 
-  const seg = (val, label) => (
-    <button className={`seg-btn ${choice === val ? 'on' : ''}`} onClick={() => setChoice(val)}>{label}</button>
-  )
+  const seg = (val, label) => <button className={`seg-btn ${choice === val ? 'on' : ''}`} onClick={() => setChoice(val)}>{label}</button>
 
   let statusLine
   if (unused > 0.5) statusLine = `Unused this month: ${formatMoney(unused)} ex VAT`
@@ -167,7 +192,7 @@ export default function MonthEntriesModal({
   return (
     <div className="modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div className="modal me-modal" onMouseDown={(e) => e.stopPropagation()}>
-        <button className="me-close" onClick={onClose} title="Close"><X size={18} /></button>
+        <button className="me-close" onClick={onClose} title="Close without saving"><X size={18} /></button>
         <h3>{monthLabel}</h3>
         <p title={line.name}>{line.name} · {line.department}</p>
         {renderSection('Forecast', 'forecast', forecast)}
@@ -191,13 +216,11 @@ export default function MonthEntriesModal({
                 {disposition === 'closed' && 'Closed.'}
               </span>
               <button className="btn btn-primary" onClick={onClose}>Done</button>
-              <button className="btn" onClick={onReopen}>Edit</button>
+              <button className="btn" disabled={saving} onClick={onReopen}>Edit</button>
             </div>
           ) : overBudget > 0.5 ? (
             <>
-              <div className="me-warn">
-                Reforecast {formatMoney(reforecastNow)} is {formatMoney(overBudget)} over budget ({formatMoney(budget)}).
-              </div>
+              <div className="me-warn">Reforecast {formatMoney(reforecastNow)} is {formatMoney(overBudget)} over budget ({formatMoney(budget)}).</div>
               {canRebalance ? (
                 <>
                   <div className="me-status">Choose an option to rebalance before saving:</div>
@@ -207,16 +230,14 @@ export default function MonthEntriesModal({
                       {seg('reduce-prorata', 'Reduce future pro-rata')}
                     </div>
                     <div className="spacer" />
-                    <button className="btn" onClick={onClose}>Done</button>
-                    <button className="btn btn-primary" disabled={!choice} onClick={doSave}>Save</button>
+                    <button className="btn" disabled={saving} onClick={onClose}>Cancel</button>
+                    <button className="btn btn-primary" disabled={!choice || saving} onClick={doClosePlan}>Save</button>
                   </div>
                 </>
               ) : (
                 <div className="me-close-actions">
-                  <div className="me-status" style={{ flex: 1, marginBottom: 0 }}>
-                    No future forecast to rebalance against — this is a true overspend.
-                  </div>
-                  <button className="btn" onClick={onClose}>Done</button>
+                  <div className="me-status" style={{ flex: 1, marginBottom: 0 }}>No future forecast to rebalance against — true overspend.</div>
+                  <button className="btn" disabled={saving} onClick={onClose}>Cancel</button>
                   <button className="btn btn-danger" onClick={() => setShowApproval(true)}>Request manager approval</button>
                 </div>
               )}
@@ -225,9 +246,10 @@ export default function MonthEntriesModal({
             <>
               <div className="me-status">{statusLine}</div>
               <div className="me-close-actions">
-                <button className="btn btn-primary" onClick={() => { setClosing(true); setChoice(null) }}>Month End Closed?</button>
+                <button className="btn btn-primary" disabled={saving} onClick={() => { setClosing(true); setChoice(null) }}>Month End Closed?</button>
                 <div className="spacer" />
-                <button className="btn" onClick={onClose}>Done</button>
+                <button className="btn" disabled={saving} onClick={onClose}>Cancel</button>
+                <button className="btn" disabled={saving} onClick={() => commit(null)}>Save &amp; close</button>
               </div>
             </>
           ) : unused > 0.5 ? (
@@ -239,15 +261,15 @@ export default function MonthEntriesModal({
                   {nextMonth && seg('roll', `Roll forward to ${nextMonth.label}`)}
                 </div>
                 <div className="spacer" />
-                <button className="btn" onClick={() => setClosing(false)}>Back</button>
-                <button className="btn btn-primary" disabled={!choice} onClick={doSave}>Save</button>
+                <button className="btn" disabled={saving} onClick={() => setClosing(false)}>Back</button>
+                <button className="btn btn-primary" disabled={!choice || saving} onClick={doClosePlan}>Save</button>
               </div>
             </>
           ) : (
             <div className="me-close-actions">
               <div className="me-status" style={{ flex: 1, marginBottom: 0 }}>Invoiced matches forecast — ready to close.</div>
-              <button className="btn" onClick={() => setClosing(false)}>Back</button>
-              <button className="btn btn-primary" onClick={doSave}>Save</button>
+              <button className="btn" disabled={saving} onClick={() => setClosing(false)}>Back</button>
+              <button className="btn btn-primary" disabled={saving} onClick={doClosePlan}>Save</button>
             </div>
           )}
         </div>
@@ -257,10 +279,10 @@ export default function MonthEntriesModal({
         <ConfirmModal
           open
           title="Delete this entry?"
-          message={`"${pendingDelete.title || (pendingDelete.type === 'invoice' ? 'Invoice' : 'Forecast line')}" will be permanently removed — there is no undo.`}
+          message={`"${pendingDelete.title || (pendingDelete.type === 'invoice' ? 'Invoice' : 'Forecast line')}" will be removed from this month.`}
           confirmLabel="Delete"
           onCancel={() => setPendingDelete(null)}
-          onConfirm={() => { onDelete(pendingDelete.id, pendingDelete.file_path); setPendingDelete(null) }}
+          onConfirm={() => { removeRow(pendingDelete._key ?? pendingDelete.id); setPendingDelete(null) }}
         />
       )}
       {showApproval && (

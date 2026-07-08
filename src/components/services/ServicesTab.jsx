@@ -16,7 +16,7 @@ const monthLabel = (key) => SERVICE_MONTHS.find((m) => m.key === key)?.label || 
 
 export default function ServicesTab({
   lines, entriesByLine, closesByLine, isAdmin, people, onLineUpdate,
-  onEntryAdd, onEntryUpdate, onEntryDelete, onEntryAttach, onDownload, onMonthSave, onMonthReopen,
+  onCommit, onDownload, onReopen,
 }) {
   const { prefs: view, update: setView } = useViewPrefs(true, DEFAULT_SERVICES_VIEW, 'services')
   const [open, setOpen] = useState(null) // { lineId, month }
@@ -169,6 +169,7 @@ export default function ServicesTab({
 
       {openLine && (
         <MonthEntriesModal
+          key={`${open.lineId}:${open.month}`}
           line={openLine}
           monthKey={open.month}
           monthLabel={monthLabel(open.month)}
@@ -176,13 +177,9 @@ export default function ServicesTab({
           lineEntries={entriesByLine[open.lineId] || []}
           closesForLine={closesByLine[open.lineId] || {}}
           disposition={closesByLine[open.lineId]?.[open.month]}
-          onAdd={onEntryAdd}
-          onUpdate={onEntryUpdate}
-          onDelete={onEntryDelete}
-          onAttach={onEntryAttach}
+          onCommit={(ops, closePlan) => onCommit(open.lineId, open.month, ops, closePlan)}
           onDownload={onDownload}
-          onSave={(plan) => onMonthSave(open.lineId, open.month, plan)}
-          onReopen={() => onMonthReopen(open.lineId, open.month)}
+          onReopen={() => onReopen(open.lineId, open.month)}
           onClose={() => setOpen(null)}
         />
       )}

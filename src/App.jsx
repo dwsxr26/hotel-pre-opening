@@ -25,8 +25,7 @@ import {
   addServiceEntry, updateServiceEntry, deleteServiceEntry, uploadServiceFile, serviceSignedUrl,
   setMonthClose, clearMonthClose, updateServiceLine, deleteAutoEntries,
 } from './data/services'
-import { SERVICE_MONTHS, computeLine } from './lib/serviceCalc'
-import { formatMoney } from './lib/format'
+import { SERVICE_MONTHS } from './lib/serviceCalc'
 
 const DEFAULT_VIEW = {
   sorting: [],
@@ -144,75 +143,6 @@ export default function App() {
     },
     [serviceLines],
   )
-  const onServiceEntryAdd = useCallback(
-    async (entry) => {
-      try {
-        await addServiceEntry(entry)
-        await refreshServiceEntries()
-      } catch (e) {
-        console.error('Add entry failed', e)
-        alert('Could not add the entry. Please try again.')
-      }
-    },
-    [refreshServiceEntries],
-  )
-  // Returns true if saved, false if blocked/failed (the modal reverts on false).
-  const onServiceEntryUpdate = useCallback(
-    async (id, patch) => {
-      // Block a forecast increase that pushes the line's reforecast over budget.
-      if ('amount_ex_vat' in patch) {
-        const lineEntries = Object.values(serviceEntries).flat()
-        const entry = lineEntries.find((e) => e.id === id)
-        if (entry && entry.type === 'forecast') {
-          const line = serviceLines.find((l) => l.id === entry.line_id)
-          const proposed = (serviceEntries[entry.line_id] || []).map((e) => (e.id === id ? { ...e, ...patch } : e))
-          const reforecast = computeLine(line, proposed, serviceCloses[entry.line_id], false).reforecast
-          if (line && reforecast > (Number(line.budget) || 0) + 0.5) {
-            alert(
-              `This pushes the reforecast to ${formatMoney(reforecast)}, above the budget of ` +
-                `${formatMoney(line.budget)}.\n\nPlease notify the manager before increasing the forecast.`,
-            )
-            return false
-          }
-        }
-      }
-      try {
-        await updateServiceEntry(id, patch)
-        await refreshServiceEntries()
-        return true
-      } catch (e) {
-        console.error('Update entry failed', e)
-        alert('Could not save the change. Please try again.')
-        return false
-      }
-    },
-    [serviceEntries, serviceLines, serviceCloses, refreshServiceEntries],
-  )
-  const onServiceEntryDelete = useCallback(
-    async (id, filePath) => {
-      try {
-        await deleteServiceEntry(id, filePath)
-        await refreshServiceEntries()
-      } catch (e) {
-        console.error('Delete entry failed', e)
-        alert('Could not remove the entry. Please try again.')
-      }
-    },
-    [refreshServiceEntries],
-  )
-  const onServiceEntryAttach = useCallback(
-    async (entry, file) => {
-      try {
-        const up = await uploadServiceFile(file)
-        await updateServiceEntry(entry.id, { file_path: up.path, file_name: up.name })
-        await refreshServiceEntries()
-      } catch (e) {
-        console.error('Attach failed', e)
-        alert('Could not attach the file. Please try again.')
-      }
-    },
-    [refreshServiceEntries],
-  )
   const onServiceDownload = useCallback(async (path) => {
     try {
       const url = await serviceSignedUrl(path)
@@ -223,31 +153,57 @@ export default function App() {
     }
   }, [])
 
-  // Save a month close. plan = { disposition, roll?: {month, amount},
-  // adjustments?: [{month, amount}] }. Roll/adjustment forecast entries are
-  // tagged auto_from = the closed month so a reopen can reverse them.
-  const onServiceMonthSave = useCallback(
-    async (lineId, month, plan) => {
+  // Commit a month's buffered edits in one transaction: adds/updates/deletes
+  // (files uploaded here, on commit — so a cancelled modal leaves no orphans),
+  // plus an optional month-close plan. ops = { adds, updates, deletes }.
+  const onServiceCommit = useCallback(
+    async (lineId, month, ops, closePlan) => {
       const label = SERVICE_MONTHS.find((m) => m.key === month)?.label || month
       try {
-        if (plan.roll && plan.roll.month && Math.round(plan.roll.amount) !== 0) {
+        for (const a of ops.adds || []) {
+          let file_path = null
+          let file_name = null
+          if (a._file) {
+            const up = await uploadServiceFile(a._file)
+            file_path = up.path
+            file_name = up.name
+          }
           await addServiceEntry({
-            line_id: lineId, month: plan.roll.month, type: 'forecast',
-            title: `Rolled forward from ${label}`, amount_ex_vat: Math.round(plan.roll.amount), vat_pct: 22, auto_from: month,
+            line_id: lineId, month, type: a.type, title: a.title || '',
+            amount_ex_vat: Number(a.amount_ex_vat) || 0, vat_pct: Number(a.vat_pct) || 0, file_path, file_name,
           })
         }
-        for (const adj of plan.adjustments || []) {
-          if (Math.round(adj.amount) === 0) continue
-          await addServiceEntry({
-            line_id: lineId, month: adj.month, type: 'forecast',
-            title: `Adjustment from ${label}`, amount_ex_vat: Math.round(adj.amount), vat_pct: 22, auto_from: month,
-          })
+        for (const u of ops.updates || []) {
+          const patch = { ...u.patch }
+          if (u._file) {
+            const up = await uploadServiceFile(u._file)
+            patch.file_path = up.path
+            patch.file_name = up.name
+          }
+          if (Object.keys(patch).length) await updateServiceEntry(u.id, patch)
         }
-        await setMonthClose(lineId, month, plan.disposition || 'closed')
+        for (const d of ops.deletes || []) await deleteServiceEntry(d.id, d.file_path)
+
+        if (closePlan) {
+          if (closePlan.roll && closePlan.roll.month && Math.round(closePlan.roll.amount) !== 0) {
+            await addServiceEntry({
+              line_id: lineId, month: closePlan.roll.month, type: 'forecast',
+              title: `Rolled forward from ${label}`, amount_ex_vat: Math.round(closePlan.roll.amount), vat_pct: 22, auto_from: month,
+            })
+          }
+          for (const adj of closePlan.adjustments || []) {
+            if (Math.round(adj.amount) === 0) continue
+            await addServiceEntry({
+              line_id: lineId, month: adj.month, type: 'forecast',
+              title: `Adjustment from ${label}`, amount_ex_vat: Math.round(adj.amount), vat_pct: 22, auto_from: month,
+            })
+          }
+          await setMonthClose(lineId, month, closePlan.disposition || 'closed')
+        }
         await Promise.all([refreshServiceEntries(), refreshServiceCloses()])
       } catch (e) {
-        console.error('Month save failed', e)
-        alert('Could not save the month close. Please try again.')
+        console.error('Commit failed', e)
+        alert('Could not save your changes. Please try again.')
       }
     },
     [refreshServiceEntries, refreshServiceCloses],
@@ -563,13 +519,9 @@ export default function App() {
           isAdmin={!!myProfile?.is_admin}
           people={people}
           onLineUpdate={onServiceLineUpdate}
-          onEntryAdd={onServiceEntryAdd}
-          onEntryUpdate={onServiceEntryUpdate}
-          onEntryDelete={onServiceEntryDelete}
-          onEntryAttach={onServiceEntryAttach}
+          onCommit={onServiceCommit}
           onDownload={onServiceDownload}
-          onMonthSave={onServiceMonthSave}
-          onMonthReopen={onServiceMonthReopen}
+          onReopen={onServiceMonthReopen}
         />
       ) : tab === 'owner' ? (
         <Summary items={items} departments={departments} groupKey="owner" groupLabel="Owner" blankLabel="Unassigned" />
