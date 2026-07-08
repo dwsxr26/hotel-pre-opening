@@ -16,6 +16,27 @@ const INFO_IDS = INFO_DEFS.map((d) => d.id)
 const MONTH_W = 96
 const clampW = (w) => Math.max(80, Math.min(500, w))
 
+// Line name: text; admins click to edit.
+function NameCell({ value, onCommit }) {
+  const [editing, setEditing] = useState(false)
+  const [v, setV] = useState(value)
+  if (!editing) {
+    return (
+      <span className="cell-pad editable" title={`${value} — click to edit`} onClick={() => { setV(value); setEditing(true) }}>
+        {value}
+      </span>
+    )
+  }
+  return (
+    <input
+      className="cell-input" autoFocus value={v}
+      onChange={(e) => setV(e.target.value)}
+      onBlur={() => { setEditing(false); const t = v.trim(); if (t && t !== value) onCommit(t) }}
+      onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') setEditing(false) }}
+    />
+  )
+}
+
 // Budget: formatted display; admins click to edit (ex-VAT).
 function BudgetCell({ valueEx, display, onCommit }) {
   const [editing, setEditing] = useState(false)
@@ -105,7 +126,10 @@ export default function ServicesTable({ rows, totals, sort, onSortToggle, view, 
   }
 
   const infoCell = (id, line, c) => {
-    if (id === 'line') return <span className="cell-pad" title={line.name}>{line.name}</span>
+    if (id === 'line') {
+      if (!isAdmin) return <span className="cell-pad" title={line.name}>{line.name}</span>
+      return <NameCell value={line.name} onCommit={(v) => onLineUpdate(line.id, { name: v })} />
+    }
     if (id === 'department') return <span className="cell-pad">{line.department}</span>
     if (id === 'owner') {
       if (!isAdmin) return <span className="cell-pad">{line.owner || '—'}</span>
