@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Download, Eye, Paperclip, Plus, Trash2, X } from 'lucide-react'
+import { Eye, Paperclip, Plus, Trash2, X } from 'lucide-react'
 import { formatMoney } from '../../lib/format'
 import { SERVICE_MONTHS, computeLine } from '../../lib/serviceCalc'
 import ConfirmModal from '../ConfirmModal'
@@ -39,7 +39,7 @@ function EntryRow({ item, locked, onChange, onDelete, onAttach, onView }) {
       <input className="me-vat" type="number" step="any" value={item.vat_pct} disabled={locked} onChange={(e) => onChange('vat_pct', e.target.value)} />
       <span className="me-total">{formatMoney(total)}</span>
       {item.type === 'invoice' && item.file_path ? (
-        <button className="me-file" title={`View ${item.file_name}`} onClick={() => onView(item.file_path)}><Download size={13} /></button>
+        <button className="me-file" title={`View ${item.file_name}`} onClick={() => onView(item.file_path)}><Eye size={14} /></button>
       ) : item.type === 'invoice' && item._file ? (
         <span className="me-file" title={`${item.file_name} (uploads on save)`}><Paperclip size={13} /></span>
       ) : item.type === 'invoice' && !locked ? (
@@ -89,7 +89,6 @@ export default function MonthEntriesModal({
     .filter((x) => x.f > 0)
   const futureTotal = futureForecast.reduce((s, x) => s + x.f, 0)
   const canRebalance = futureForecast.length > 0 && overBudget <= futureTotal + 0.5
-  const invoiceFiles = invoices.filter((e) => e.file_path)
 
   // --- draft mutators ---
   const change = (key, field, val) => setDraft((d) => d.map((x) => (x._key ?? x.id) === key ? { ...x, [field]: val } : x))
@@ -197,14 +196,6 @@ export default function MonthEntriesModal({
         <p title={line.name}>{line.name} · {line.department}</p>
         {renderSection('Forecast', 'forecast', forecast)}
         {renderSection('Invoices', 'invoice', invoices)}
-
-        {invoiceFiles.length > 0 && (
-          <div className="me-viewbar">
-            <button className="btn" onClick={() => invoiceFiles.forEach((e) => onDownload(e.file_path))} title="Open the attached invoice(s) in a new tab">
-              <Eye size={14} /> View invoice{invoiceFiles.length > 1 ? `s (${invoiceFiles.length})` : ''}
-            </button>
-          </div>
-        )}
 
         <div className="me-footer">
           {locked ? (
