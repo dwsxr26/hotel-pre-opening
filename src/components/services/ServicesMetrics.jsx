@@ -3,7 +3,7 @@ import { ChevronDown } from 'lucide-react'
 import { formatMoney } from '../../lib/format'
 import { aggregate } from '../../lib/serviceCalc'
 
-function MiniTable({ label, rows }) {
+function MiniTable({ label, rows, totals }) {
   return (
     <div className="card overflow-hidden" style={{ flex: 1, minWidth: 320 }}>
       <div className="card-hd">By {label}</div>
@@ -29,6 +29,15 @@ function MiniTable({ label, rows }) {
               </tr>
             ))}
           </tbody>
+          <tfoot>
+            <tr className="svc-total-row">
+              <td>Total</td>
+              <td className="num">{formatMoney(totals.budget)}</td>
+              <td className="num">{formatMoney(totals.spent)}</td>
+              <td className="num">{formatMoney(totals.reforecast)}</td>
+              <td className="num">{formatMoney(totals.remaining)}</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </div>
@@ -63,8 +72,8 @@ export default function ServicesMetrics({ lines, entriesByLine, closesByLine, in
       </button>
       {open && (
         <div className="summary-pad" style={{ paddingTop: 0, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          <MiniTable label="Department" rows={byDept} />
-          <MiniTable label="Owner" rows={byOwner} />
+          <MiniTable label="Department" rows={byDept} totals={totals} />
+          <MiniTable label="Owner" rows={byOwner} totals={totals} />
         </div>
       )}
     </div>

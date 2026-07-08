@@ -19,7 +19,10 @@ import Summary from './components/Summary'
 import ProfileModal from './components/ProfileModal'
 import InviteModal from './components/InviteModal'
 import ServicesTab from './components/services/ServicesTab'
-import { fetchServiceLines, fetchServiceEntries, fetchServiceCloses } from './data/services'
+import {
+  fetchServiceLines, fetchServiceEntries, fetchServiceCloses,
+  addServiceEntry, updateServiceEntry, deleteServiceEntry, uploadServiceFile, serviceSignedUrl,
+} from './data/services'
 
 const DEFAULT_VIEW = {
   sorting: [],
@@ -107,6 +110,71 @@ export default function App() {
       active = false
     }
   }, [user])
+
+  // Services entry handlers (forecast breakdown + invoices). Refetch entries
+  // after each change so figures recompute live.
+  const refreshServiceEntries = useCallback(
+    () => fetchServiceEntries().then(setServiceEntries).catch((e) => console.error('Entries reload failed', e)),
+    [],
+  )
+  const onServiceEntryAdd = useCallback(
+    async (entry) => {
+      try {
+        await addServiceEntry(entry)
+        await refreshServiceEntries()
+      } catch (e) {
+        console.error('Add entry failed', e)
+        alert('Could not add the entry. Please try again.')
+      }
+    },
+    [refreshServiceEntries],
+  )
+  const onServiceEntryUpdate = useCallback(
+    async (id, patch) => {
+      try {
+        await updateServiceEntry(id, patch)
+        await refreshServiceEntries()
+      } catch (e) {
+        console.error('Update entry failed', e)
+        alert('Could not save the change. Please try again.')
+      }
+    },
+    [refreshServiceEntries],
+  )
+  const onServiceEntryDelete = useCallback(
+    async (id, filePath) => {
+      try {
+        await deleteServiceEntry(id, filePath)
+        await refreshServiceEntries()
+      } catch (e) {
+        console.error('Delete entry failed', e)
+        alert('Could not remove the entry. Please try again.')
+      }
+    },
+    [refreshServiceEntries],
+  )
+  const onServiceEntryAttach = useCallback(
+    async (entry, file) => {
+      try {
+        const up = await uploadServiceFile(file)
+        await updateServiceEntry(entry.id, { file_path: up.path, file_name: up.name })
+        await refreshServiceEntries()
+      } catch (e) {
+        console.error('Attach failed', e)
+        alert('Could not attach the file. Please try again.')
+      }
+    },
+    [refreshServiceEntries],
+  )
+  const onServiceDownload = useCallback(async (path) => {
+    try {
+      const url = await serviceSignedUrl(path)
+      window.open(url, '_blank', 'noopener')
+    } catch (e) {
+      console.error('Download failed', e)
+      alert('Could not open the file.')
+    }
+  }, [])
 
   // Team members shown in the Owner dropdown: only signed-up users (by their
   // "First L." display name). A blank owner counts as unassigned.
@@ -385,7 +453,16 @@ export default function App() {
           />
         </>
       ) : tab === 'services' ? (
-        <ServicesTab lines={serviceLines} entriesByLine={serviceEntries} closesByLine={serviceCloses} />
+        <ServicesTab
+          lines={serviceLines}
+          entriesByLine={serviceEntries}
+          closesByLine={serviceCloses}
+          onEntryAdd={onServiceEntryAdd}
+          onEntryUpdate={onServiceEntryUpdate}
+          onEntryDelete={onServiceEntryDelete}
+          onEntryAttach={onServiceEntryAttach}
+          onDownload={onServiceDownload}
+        />
       ) : tab === 'owner' ? (
         <Summary items={items} departments={departments} groupKey="owner" groupLabel="Owner" blankLabel="Unassigned" />
       ) : (
