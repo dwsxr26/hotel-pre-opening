@@ -328,4 +328,17 @@ a.btn { text-decoration: none; }
 .auth-divider { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: var(--muted-fg); font-size: 12px; }
 .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
+/* Services module */
+.svc-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg-btn { border: 0; background: #fff; font: inherit; font-size: 13px; padding: 6px 12px; cursor: pointer; color: var(--muted-fg); }
+.seg-btn + .seg-btn { border-left: 1px solid var(--border); }
+.seg-btn.on { background: var(--primary); color: #fff; }
+.svc-grid .pin-svc { position: sticky; left: 0; z-index: 6; width: 260px; min-width: 260px; max-width: 260px; background: #fff; }
+.svc-grid th.pin-svc { z-index: 7; }
+.svc-grid th { white-space: nowrap; }
+.svc-grid .svc-month { width: 96px; min-width: 96px; }
+.svc-grid th.svc-past, .svc-grid td.svc-past { background: hsl(240 4.8% 97.5%); }
+.svc-grid .svc-over .cell-pad { color: hsl(0 60% 45%); font-weight: 600; }
+
 .center-note { text-align: center; color: var(--muted-fg); font-size: 14px; padding: 48px; }

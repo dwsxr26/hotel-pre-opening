@@ -18,6 +18,8 @@ import OrdersTable from './components/OrdersTable'
 import Summary from './components/Summary'
 import ProfileModal from './components/ProfileModal'
 import InviteModal from './components/InviteModal'
+import ServicesTab from './components/services/ServicesTab'
+import { fetchServiceLines, fetchServiceEntries, fetchServiceCloses } from './data/services'
 
 const DEFAULT_VIEW = {
   sorting: [],
@@ -32,6 +34,7 @@ const DEFAULT_VIEW = {
 
 const TABS = [
   { id: 'orders', label: 'Orders' },
+  { id: 'services', label: 'Services' },
   { id: 'owner', label: 'Summary by owner' },
   { id: 'supplier', label: 'Summary by supplier' },
 ]
@@ -42,6 +45,9 @@ export default function App() {
   const [categories, setCategories] = useState([])
   const [departments, setDepartments] = useState(DEPARTMENTS)
   const [attachments, setAttachments] = useState({})
+  const [serviceLines, setServiceLines] = useState([])
+  const [serviceEntries, setServiceEntries] = useState({})
+  const [serviceCloses, setServiceCloses] = useState({})
   const [profiles, setProfiles] = useState([])
   const [myProfile, setMyProfile] = useState(null)
   const [showProfile, setShowProfile] = useState(false)
@@ -81,6 +87,24 @@ export default function App() {
     return () => {
       active = false
       unsub()
+    }
+  }, [user])
+
+  // Services data loads separately so a missing 0007 migration never breaks the
+  // Orders tab — on error the Services tab just shows its "run migration" note.
+  useEffect(() => {
+    if (!user) return
+    let active = true
+    Promise.all([fetchServiceLines(), fetchServiceEntries(), fetchServiceCloses()])
+      .then(([ls, es, cs]) => {
+        if (!active) return
+        setServiceLines(ls)
+        setServiceEntries(es)
+        setServiceCloses(cs)
+      })
+      .catch((err) => console.error('Services load failed (run migration 0007_services.sql?)', err))
+    return () => {
+      active = false
     }
   }, [user])
 
@@ -296,11 +320,13 @@ export default function App() {
         onEditName={() => setShowProfile(true)}
         onInvite={() => setShowInvite(true)}
       />
-      <Metrics
-        items={filteredItems}
-        open={view.metricsOpen === true}
-        onToggle={() => setView({ metricsOpen: !(view.metricsOpen === true) })}
-      />
+      {tab === 'orders' && (
+        <Metrics
+          items={filteredItems}
+          open={view.metricsOpen === true}
+          onToggle={() => setView({ metricsOpen: !(view.metricsOpen === true) })}
+        />
+      )}
 
       <div className="tabs">
         {TABS.map((t) => (
@@ -358,6 +384,8 @@ export default function App() {
             onDownloadAttachment={onDownloadAttachment}
           />
         </>
+      ) : tab === 'services' ? (
+        <ServicesTab lines={serviceLines} entriesByLine={serviceEntries} closesByLine={serviceCloses} />
       ) : tab === 'owner' ? (
         <Summary items={items} departments={departments} groupKey="owner" groupLabel="Owner" blankLabel="Unassigned" />
       ) : (
