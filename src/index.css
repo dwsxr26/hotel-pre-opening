@@ -386,6 +386,8 @@ a.btn { text-decoration: none; }
 .me-closed span { flex: 1; font-size: 13px; color: hsl(140 40% 32%); }
 .me-close-actions .btn, .me-closed .btn { height: 32px; }
 .me-viewbar { display: flex; justify-content: flex-end; margin-top: 12px; }
+.me-warn { background: hsl(0 82% 95%); border: 1px solid hsl(0 70% 85%); color: hsl(0 55% 40%); padding: 8px 10px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; }
+.me-row input:disabled { background: hsl(240 5% 96%); color: var(--muted-fg); cursor: default; }
 .metrics-hd { display: flex; align-items: center; }
 .metrics-hd .zoomer { padding-right: 12px; }
 
