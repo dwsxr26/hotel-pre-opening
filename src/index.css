@@ -342,7 +342,14 @@ a.btn { text-decoration: none; }
 .svc-grid th { white-space: nowrap; height: 34px; background: var(--head-bg); }
 .svc-th { display: flex; align-items: center; gap: 4px; padding: 0 6px 0 8px; height: 100%; }
 .svc-th-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.svc-grid th.cell-num .svc-th { flex-direction: row-reverse; }
+.svc-grid th.cell-num .svc-th-label { text-align: right; }
+.svc-sort { display: inline-flex; flex: none; color: var(--accent); }
+.svc-month-label { display: inline-flex; align-items: center; gap: 3px; }
+.svc-grid th.sortable { cursor: pointer; user-select: none; }
+.svc-grid th.sortable:hover { color: var(--fg); }
+.svc-total td { position: sticky; bottom: 0; background: hsl(240 5% 88%); font-weight: 700; color: #000; border-top: 2px solid var(--border); }
+.svc-grid tfoot td.pinned, .svc-grid tfoot td.svc-past { background: hsl(240 5% 88%); }
+.svc-total td .cell-pad { font-weight: 700; color: #000; }
 .svc-grid td { height: 34px; }
 .svc-grid td .cell-pad { line-height: 16px; }
 .svc-grid th.svc-past, .svc-grid td.svc-past { background: hsl(240 4.8% 97.5%); }

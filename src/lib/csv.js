@@ -27,6 +27,13 @@ export function itemsToCsv(rows) {
   return lines.join('\n')
 }
 
+// Build a CSV string from a header array and rows (array of arrays).
+export function rowsToCsv(headers, rows) {
+  const lines = [headers.map(esc).join(',')]
+  for (const r of rows) lines.push(r.map(esc).join(','))
+  return lines.join('\n')
+}
+
 // Trigger a client-side download of a CSV file.
 export function downloadCsv(filename, csv) {
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })

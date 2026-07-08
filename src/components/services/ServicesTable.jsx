@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { GripVertical } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronsUpDown, GripVertical } from 'lucide-react'
 import { formatMoney } from '../../lib/format'
-import { SERVICE_MONTHS, isPastMonth, computeLine } from '../../lib/serviceCalc'
+import { SERVICE_MONTHS, isPastMonth } from '../../lib/serviceCalc'
 
-// Hand-rolled sticky grid: the 7 info columns are pinned (fixed on horizontal
-// scroll), resizable and drag-reorderable; the 33 month columns scroll. Offsets
-// come from state (not measured), so scrolling never affects widths.
 const INFO_DEFS = [
   { id: 'line', label: 'Line', w: 260 },
   { id: 'department', label: 'Department', w: 130 },
@@ -25,10 +22,7 @@ function BudgetCell({ valueEx, display, onCommit }) {
   const [v, setV] = useState(valueEx)
   if (!editing) {
     return (
-      <span
-        className="cell-pad cell-num editable" title="Click to edit budget"
-        onClick={() => { setV(valueEx); setEditing(true) }}
-      >
+      <span className="cell-pad cell-num editable" title="Click to edit budget" onClick={() => { setV(valueEx); setEditing(true) }}>
         {display}
       </span>
     )
@@ -43,26 +37,18 @@ function BudgetCell({ valueEx, display, onCommit }) {
   )
 }
 
-export default function ServicesTable({ lines, entriesByLine, closesByLine, incl, view, setView, onOpenMonth, isAdmin, people, onLineUpdate, zoom = 1 }) {
-  const [drag, setDrag] = useState(null) // live resize: { id, w }
+export default function ServicesTable({ rows, totals, sort, onSortToggle, view, setView, onOpenMonth, isAdmin, people, onLineUpdate, zoom = 1 }) {
+  const [drag, setDrag] = useState(null) // live resize { id, w }
   const [dragCol, setDragCol] = useState(null)
   const scrollRef = useRef(null)
   const didScroll = useRef(false)
 
-  // Default the horizontal scroll to Jul-26 (first forecast month); scroll left
-  // for history. Runs once after data loads.
   useEffect(() => {
-    if (didScroll.current || lines.length === 0 || !scrollRef.current) return
+    if (didScroll.current || rows.length === 0 || !scrollRef.current) return
     const idx = SERVICE_MONTHS.findIndex((m) => m.key === '2026-07-01')
     if (idx > 0) scrollRef.current.scrollLeft = idx * MONTH_W
     didScroll.current = true
-  }, [lines])
-
-  const calc = useMemo(() => {
-    const map = {}
-    for (const l of lines) map[l.id] = computeLine(l, entriesByLine[l.id], closesByLine[l.id], incl)
-    return map
-  }, [lines, entriesByLine, closesByLine, incl])
+  }, [rows])
 
   const infoOrder = useMemo(() => {
     const saved = view.svcOrder
@@ -75,8 +61,6 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
     return clampW(view.svcWidths?.[id] ?? INFO_DEFS.find((d) => d.id === id)?.w ?? MONTH_W)
   }
 
-  // Cumulative left offsets for the pinned info columns (recomputed each render
-  // so a live resize shifts the columns to its right).
   const infoCols = infoOrder.map((id) => ({ ...INFO_DEFS.find((d) => d.id === id), w: width(id) }))
   let acc = 0
   const lefts = {}
@@ -91,10 +75,7 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
     const startX = e.clientX
     const startW = width(id)
     let latest = startW
-    const move = (ev) => {
-      latest = Math.max(80, startW + (ev.clientX - startX))
-      setDrag({ id, w: latest })
-    }
+    const move = (ev) => { latest = Math.max(80, startW + (ev.clientX - startX)); setDrag({ id, w: latest }) }
     const up = () => {
       window.removeEventListener('mousemove', move)
       window.removeEventListener('mouseup', up)
@@ -113,6 +94,11 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
     setDragCol(null)
   }
 
+  const sortIcon = (key) => {
+    if (sort.key !== key) return <ChevronsUpDown size={12} opacity={0.4} />
+    return sort.dir === 'asc' ? <ArrowUp size={13} /> : <ArrowDown size={13} />
+  }
+
   const infoCell = (id, line, c) => {
     if (id === 'line') return <span className="cell-pad" title={line.name}>{line.name}</span>
     if (id === 'department') return <span className="cell-pad">{line.department}</span>
@@ -120,10 +106,7 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
       if (!isAdmin) return <span className="cell-pad">{line.owner || '—'}</span>
       const opts = line.owner && !people.includes(line.owner) ? [line.owner, ...people] : people
       return (
-        <select
-          className="cell-input" value={line.owner || ''}
-          onChange={(e) => onLineUpdate(line.id, { owner: e.target.value })}
-        >
+        <select className="cell-input" value={line.owner || ''} onChange={(e) => onLineUpdate(line.id, { owner: e.target.value })}>
           <option value="">Unassigned</option>
           {opts.map((p) => <option key={p} value={p}>{p}</option>)}
         </select>
@@ -131,9 +114,7 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
     }
     if (id === 'budget') {
       if (!isAdmin) return <span className="cell-pad cell-num">{formatMoney(c.budget)}</span>
-      return (
-        <BudgetCell valueEx={line.budget} display={formatMoney(c.budget)} onCommit={(v) => onLineUpdate(line.id, { budget: v })} />
-      )
+      return <BudgetCell valueEx={line.budget} display={formatMoney(c.budget)} onCommit={(v) => onLineUpdate(line.id, { budget: v })} />
     }
     if (id === 'spent') return <span className="cell-pad cell-num">{formatMoney(c.spent)}</span>
     if (id === 'reforecast') return <span className="cell-pad cell-num">{formatMoney(c.reforecast)}</span>
@@ -141,12 +122,10 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
     return null
   }
 
-  if (lines.length === 0) {
+  if (rows.length === 0) {
     return (
       <div className="card">
-        <div className="center-note">
-          No service lines yet. Run migration <code>0007_services.sql</code> then <code>npm run seed:services</code>.
-        </div>
+        <div className="center-note">No service lines match the current filters.</div>
       </div>
     )
   }
@@ -166,14 +145,16 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
                 return (
                   <th
                     key={c.id}
-                    className={`pinned ${last ? 'pinned-shadow' : ''} ${c.num ? 'cell-num' : ''} ${dragCol === c.id ? 'drag-source' : ''}`}
+                    className={`pinned ${last ? 'pinned-shadow' : ''} ${c.num ? 'cell-num' : ''} ${dragCol === c.id ? 'drag-source' : ''} sortable`}
                     style={{ left: lefts[c.id], width: c.w, minWidth: c.w, maxWidth: c.w, zIndex: 8 }}
+                    onClick={() => onSortToggle(c.id)}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={() => onDrop(c.id)}
                   >
                     <div className="svc-th">
                       <span
                         className="th-grip" draggable
+                        onClick={(e) => e.stopPropagation()}
                         onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; setDragCol(c.id) }}
                         onDragEnd={() => setDragCol(null)}
                         title="Drag to reorder"
@@ -181,21 +162,25 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
                         <GripVertical size={12} />
                       </span>
                       <span className="svc-th-label">{c.label}</span>
+                      <span className="svc-sort">{sortIcon(c.id)}</span>
                     </div>
-                    <span className="resizer" onMouseDown={(e) => startResize(c.id, e)} />
+                    <span className="resizer" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => startResize(c.id, e)} />
                   </th>
                 )
               })}
               {SERVICE_MONTHS.map((m) => (
-                <th key={m.key} data-month={m.key} className={`cell-num svc-month ${isPastMonth(m.key) ? 'svc-past' : ''}`}>
-                  {m.label}
+                <th
+                  key={m.key} data-month={m.key}
+                  className={`svc-month sortable ${isPastMonth(m.key) ? 'svc-past' : ''}`}
+                  onClick={() => onSortToggle(`m:${m.key}`)}
+                >
+                  <span className="svc-month-label">{m.label} {sortIcon(`m:${m.key}`)}</span>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {lines.map((line) => {
-              const c = calc[line.id]
+            {rows.map(({ line, c }) => {
               const over = c.reforecast > c.budget + 0.5
               return (
                 <tr key={line.id}>
@@ -214,10 +199,7 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
                   {SERVICE_MONTHS.map((m) => {
                     const mv = c.monthly[m.key]
                     return (
-                      <td
-                        key={m.key}
-                        className={`cell-num svc-month ${isPastMonth(m.key) ? 'svc-past' : ''} ${mv.closed ? 'svc-closed' : ''}`}
-                      >
+                      <td key={m.key} className={`cell-num svc-month ${isPastMonth(m.key) ? 'svc-past' : ''} ${mv.closed ? 'svc-closed' : ''}`}>
                         <button className="svc-cell-btn" onClick={() => onOpenMonth(line, m.key)}>
                           {mv.effective ? formatMoney(mv.effective) : '-'}
                         </button>
@@ -228,6 +210,28 @@ export default function ServicesTable({ lines, entriesByLine, closesByLine, incl
               )
             })}
           </tbody>
+          <tfoot>
+            <tr className="svc-total">
+              {infoCols.map((ic) => {
+                const last = ic.id === infoOrder[infoOrder.length - 1]
+                const content = ic.id === 'line' ? 'Total' : ic.num ? formatMoney(totals[ic.id]) : ''
+                return (
+                  <td
+                    key={ic.id}
+                    className={`pinned ${last ? 'pinned-shadow' : ''} ${ic.num ? 'cell-num' : ''}`}
+                    style={{ left: lefts[ic.id], width: ic.w, minWidth: ic.w, maxWidth: ic.w, bottom: 0, zIndex: 7 }}
+                  >
+                    <span className="cell-pad">{content}</span>
+                  </td>
+                )
+              })}
+              {SERVICE_MONTHS.map((m) => (
+                <td key={m.key} className={`cell-num svc-month ${isPastMonth(m.key) ? 'svc-past' : ''}`} style={{ bottom: 0, zIndex: 3 }}>
+                  <span className="cell-pad">{formatMoney(totals.months[m.key])}</span>
+                </td>
+              ))}
+            </tr>
+          </tfoot>
         </table>
       </div>
     </div>
