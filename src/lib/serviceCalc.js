@@ -28,7 +28,7 @@ const gross = (amount, vatPct, incl) => (incl ? amount * (1 + (vatPct ?? DEFAULT
 
 // Compute a line's figures from its entries and closed months.
 //   entries: [{ month, type: 'forecast'|'invoice', amount_ex_vat, vat_pct }]
-//   closes:  Set of month keys that have been "closed"
+//   closes:  { [monthKey]: disposition } for closed months
 // Returns { budget, spent, reforecast, remaining, monthly: { [monthKey]: {...} } }.
 export function computeLine(line, entries = [], closes, incl = false) {
   const byMonth = {}
@@ -44,7 +44,7 @@ export function computeLine(line, entries = [], closes, incl = false) {
   const monthly = {}
   for (const { key } of SERVICE_MONTHS) {
     const b = byMonth[key] || { forecast: 0, invoiced: 0 }
-    const closed = !!closes?.has(key)
+    const closed = !!closes?.[key]
     // Invoices consume the forecast; a closed month expects only what was invoiced.
     const effective = closed ? b.invoiced : Math.max(b.forecast, b.invoiced)
     monthly[key] = { ...b, effective, closed }

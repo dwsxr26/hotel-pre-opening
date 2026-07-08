@@ -22,7 +22,10 @@ import ServicesTab from './components/services/ServicesTab'
 import {
   fetchServiceLines, fetchServiceEntries, fetchServiceCloses,
   addServiceEntry, updateServiceEntry, deleteServiceEntry, uploadServiceFile, serviceSignedUrl,
+  setMonthClose, clearMonthClose,
 } from './data/services'
+import { SERVICE_MONTHS, computeLine } from './lib/serviceCalc'
+import { formatMoney } from './lib/format'
 
 const DEFAULT_VIEW = {
   sorting: [],
@@ -117,6 +120,10 @@ export default function App() {
     () => fetchServiceEntries().then(setServiceEntries).catch((e) => console.error('Entries reload failed', e)),
     [],
   )
+  const refreshServiceCloses = useCallback(
+    () => fetchServiceCloses().then(setServiceCloses).catch((e) => console.error('Closes reload failed', e)),
+    [],
+  )
   const onServiceEntryAdd = useCallback(
     async (entry) => {
       try {
@@ -129,17 +136,37 @@ export default function App() {
     },
     [refreshServiceEntries],
   )
+  // Returns true if saved, false if blocked/failed (the modal reverts on false).
   const onServiceEntryUpdate = useCallback(
     async (id, patch) => {
+      // Block a forecast increase that pushes the line's reforecast over budget.
+      if ('amount_ex_vat' in patch) {
+        const lineEntries = Object.values(serviceEntries).flat()
+        const entry = lineEntries.find((e) => e.id === id)
+        if (entry && entry.type === 'forecast') {
+          const line = serviceLines.find((l) => l.id === entry.line_id)
+          const proposed = (serviceEntries[entry.line_id] || []).map((e) => (e.id === id ? { ...e, ...patch } : e))
+          const reforecast = computeLine(line, proposed, serviceCloses[entry.line_id], false).reforecast
+          if (line && reforecast > (Number(line.budget) || 0) + 0.5) {
+            alert(
+              `This pushes the reforecast to ${formatMoney(reforecast)}, above the budget of ` +
+                `${formatMoney(line.budget)}.\n\nPlease notify the manager before increasing the forecast.`,
+            )
+            return false
+          }
+        }
+      }
       try {
         await updateServiceEntry(id, patch)
         await refreshServiceEntries()
+        return true
       } catch (e) {
         console.error('Update entry failed', e)
         alert('Could not save the change. Please try again.')
+        return false
       }
     },
-    [refreshServiceEntries],
+    [serviceEntries, serviceLines, serviceCloses, refreshServiceEntries],
   )
   const onServiceEntryDelete = useCallback(
     async (id, filePath) => {
@@ -175,6 +202,48 @@ export default function App() {
       alert('Could not open the file.')
     }
   }, [])
+
+  // Close a month: 'cancelled' drops the unused (reforecast falls), 'rolled'
+  // moves the unused forecast into the next month.
+  const onServiceCloseMonth = useCallback(
+    async (lineId, month, disposition) => {
+      try {
+        if (disposition === 'rolled') {
+          const rows = (serviceEntries[lineId] || []).filter((e) => e.month === month)
+          const fSum = rows.filter((e) => e.type === 'forecast').reduce((s, e) => s + (Number(e.amount_ex_vat) || 0), 0)
+          const iSum = rows.filter((e) => e.type === 'invoice').reduce((s, e) => s + (Number(e.amount_ex_vat) || 0), 0)
+          const unused = Math.max(0, fSum - iSum)
+          const idx = SERVICE_MONTHS.findIndex((m) => m.key === month)
+          const next = SERVICE_MONTHS[idx + 1]
+          if (unused > 0 && next) {
+            await addServiceEntry({
+              line_id: lineId, month: next.key, type: 'forecast',
+              title: `Rolled forward from ${SERVICE_MONTHS[idx].label}`, amount_ex_vat: unused, vat_pct: 22,
+            })
+          }
+        }
+        await setMonthClose(lineId, month, disposition)
+        await Promise.all([refreshServiceEntries(), refreshServiceCloses()])
+      } catch (e) {
+        console.error('Close month failed', e)
+        alert('Could not close the month. Please try again.')
+      }
+    },
+    [serviceEntries, refreshServiceEntries, refreshServiceCloses],
+  )
+
+  const onServiceReopenMonth = useCallback(
+    async (lineId, month) => {
+      try {
+        await clearMonthClose(lineId, month)
+        await refreshServiceCloses()
+      } catch (e) {
+        console.error('Reopen failed', e)
+        alert('Could not reopen the month.')
+      }
+    },
+    [refreshServiceCloses],
+  )
 
   // Team members shown in the Owner dropdown: only signed-up users (by their
   // "First L." display name). A blank owner counts as unassigned.
@@ -462,6 +531,8 @@ export default function App() {
           onEntryDelete={onServiceEntryDelete}
           onEntryAttach={onServiceEntryAttach}
           onDownload={onServiceDownload}
+          onCloseMonth={onServiceCloseMonth}
+          onReopenMonth={onServiceReopenMonth}
         />
       ) : tab === 'owner' ? (
         <Summary items={items} departments={departments} groupKey="owner" groupLabel="Owner" blankLabel="Unassigned" />

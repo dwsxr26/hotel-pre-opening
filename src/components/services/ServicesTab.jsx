@@ -12,6 +12,7 @@ const monthLabel = (key) => SERVICE_MONTHS.find((m) => m.key === key)?.label || 
 // layout persisted. Clicking a month cell opens the entry editor.
 export default function ServicesTab({
   lines, entriesByLine, closesByLine, onEntryAdd, onEntryUpdate, onEntryDelete, onEntryAttach, onDownload,
+  onCloseMonth, onReopenMonth,
 }) {
   const { prefs: view, update: setView } = useViewPrefs(true, DEFAULT_SERVICES_VIEW, 'services')
   const [open, setOpen] = useState(null) // { lineId, month }
@@ -60,11 +61,14 @@ export default function ServicesTab({
           monthLabel={monthLabel(open.month)}
           entries={openEntries}
           incl={incl}
+          disposition={closesByLine[open.lineId]?.[open.month]}
           onAdd={onEntryAdd}
           onUpdate={onEntryUpdate}
           onDelete={onEntryDelete}
           onAttach={onEntryAttach}
           onDownload={onDownload}
+          onCloseMonth={(disposition) => onCloseMonth(open.lineId, open.month, disposition)}
+          onReopenMonth={() => onReopenMonth(open.lineId, open.month)}
           onClose={() => setOpen(null)}
         />
       )}

@@ -23,12 +23,12 @@ export async function fetchServiceEntries() {
   return map
 }
 
-// Returns a map of line_id -> Set(monthKey) of closed months.
+// Returns a map of line_id -> { [monthKey]: disposition }.
 export async function fetchServiceCloses() {
   const { data, error } = await supabase.from('service_month_close').select('line_id, month, disposition')
   if (error) throw error
   const map = {}
-  for (const c of data ?? []) (map[c.line_id] ||= new Set()).add(c.month)
+  for (const c of data ?? []) (map[c.line_id] ||= {})[c.month] = c.disposition
   return map
 }
 
