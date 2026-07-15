@@ -516,6 +516,19 @@ export default function OrdersTable({
   )
 
   const rowsData = useMemo(() => filteredRows.map((r) => r.original), [filteredRows])
+
+  // Column totals for the sticky footer — only the currency columns.
+  const colTotals = useMemo(() => {
+    const t = { unit_price: 0, unit_incl: 0, total: 0, budget: 0 }
+    for (const r of rowsData) {
+      const unit = Number(r.unit_price) || 0
+      t.unit_price += unit
+      t.unit_incl += unit * (1 + (Number(r.vat_pct) || 0) / 100)
+      t.total += lineTotal(r)
+      t.budget += Number(r.budget) || 0
+    }
+    return t
+  }, [rowsData])
   const pageCount = table.getPageCount()
   const pageIndex = table.getState().pagination.pageIndex
   const pageSize = table.getState().pagination.pageSize
@@ -687,6 +700,24 @@ export default function OrdersTable({
                 </tr>
               )}
             </tbody>
+            <tfoot>
+              <tr>
+                <td className="pinned pin-select select-cell" />
+                {leafCols.map((col) => {
+                  const isCur = Object.prototype.hasOwnProperty.call(colTotals, col.id)
+                  const isNum = (col.columnDef.meta || {}).align === 'num'
+                  return (
+                    <td key={col.id} className={`${pinClass(col)} ${isNum ? 'cell-num' : ''}`}>
+                      {isCur ? (
+                        <span className="cell-pad cell-num">{formatMoney2(colTotals[col.id])}</span>
+                      ) : col.id === 'package' ? (
+                        <span className="cell-pad">Total</span>
+                      ) : null}
+                    </td>
+                  )
+                })}
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>

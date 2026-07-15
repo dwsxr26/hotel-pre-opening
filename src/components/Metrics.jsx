@@ -8,25 +8,21 @@ import StatusBars from './StatusBars'
 export default function Metrics({ items, open, onToggle }) {
   const kpi = useMemo(() => {
     const total = items.length
-    const value = items.reduce((s, r) => s + lineTotal(r), 0)
-    const arrived = items.filter((r) => r.status === 'Order arrived').length
-    const allocated = items.filter((r) => r.owner).length
-    return { total, value, arrived, allocated }
+    const budget = items.reduce((s, r) => s + (Number(r.budget) || 0), 0)
+    const ordered = items
+      .filter((r) => r.status === 'Order placed' || r.status === 'Order complete')
+      .reduce((s, r) => s + lineTotal(r), 0)
+    const remaining = items
+      .filter((r) => r.status === 'Not ordered')
+      .reduce((s, r) => s + lineTotal(r), 0)
+    return { total, budget, ordered, remaining }
   }, [items])
 
   const cards = [
+    { label: 'Budget', value: formatMoney(kpi.budget), hint: 'sum of Budget column' },
+    { label: 'Ordered', value: formatMoney(kpi.ordered), hint: 'placed or complete' },
+    { label: 'Remaining', value: formatMoney(kpi.remaining), hint: 'not yet ordered' },
     { label: 'Line items', value: formatInt(kpi.total), hint: 'across all packages' },
-    { label: 'Total value', value: formatMoney(kpi.value), hint: 'qty × unit price' },
-    {
-      label: 'Arrived',
-      value: formatInt(kpi.arrived),
-      hint: kpi.total ? `${Math.round((kpi.arrived / kpi.total) * 100)}% of items` : '—',
-    },
-    {
-      label: 'Allocated',
-      value: formatInt(kpi.allocated),
-      hint: kpi.total ? `${Math.round((kpi.allocated / kpi.total) * 100)}% has an owner` : '—',
-    },
   ]
 
   return (
@@ -34,7 +30,9 @@ export default function Metrics({ items, open, onToggle }) {
       <button className="collapse-hd" onClick={onToggle}>
         <ChevronDown size={16} className={`collapse-chev ${open ? 'open' : ''}`} />
         <span className="card-hd" style={{ padding: 0, border: 0 }}>Metrics</span>
-        <span className="collapse-hint">{open ? 'Hide' : 'Show'}</span>
+        <span className="collapse-hint">
+          Budget {formatMoney(kpi.budget)} · Ordered {formatMoney(kpi.ordered)} · Remaining {formatMoney(kpi.remaining)} · {open ? 'Hide' : 'Show'}
+        </span>
       </button>
       {open && (
         <div className="summary-pad" style={{ paddingTop: 0 }}>
