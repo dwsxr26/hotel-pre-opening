@@ -5,9 +5,10 @@
     "owner": "",
     "budget": 20000,
     "sort_index": 0,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-07-01",
+        "type": "forecast",
         "amount_ex_vat": 20000
       }
     ]
@@ -18,33 +19,40 @@
     "owner": "",
     "budget": 26500,
     "sort_index": 1,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-08-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-09-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       }
     ]
@@ -55,13 +63,20 @@
     "owner": "",
     "budget": 3000,
     "sort_index": 2,
-    "forecasts": [
+    "entries": [
       {
         "month": "2025-12-01",
+        "type": "forecast",
+        "amount_ex_vat": 1000
+      },
+      {
+        "month": "2025-12-01",
+        "type": "invoice",
         "amount_ex_vat": 1000
       },
       {
         "month": "2026-09-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       }
     ]
@@ -72,9 +87,10 @@
     "owner": "",
     "budget": 4000,
     "sort_index": 3,
-    "forecasts": [
+    "entries": [
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 4000
       }
     ]
@@ -85,9 +101,10 @@
     "owner": "",
     "budget": 4000,
     "sort_index": 4,
-    "forecasts": [
+    "entries": [
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 4000
       }
     ]
@@ -98,9 +115,10 @@
     "owner": "",
     "budget": 4000,
     "sort_index": 5,
-    "forecasts": [
+    "entries": [
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 4000
       }
     ]
@@ -111,13 +129,15 @@
     "owner": "",
     "budget": 15000,
     "sort_index": 6,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-07-01",
+        "type": "forecast",
         "amount_ex_vat": 7500
       },
       {
         "month": "2026-08-01",
+        "type": "forecast",
         "amount_ex_vat": 7500
       }
     ]
@@ -128,9 +148,10 @@
     "owner": "",
     "budget": 2000,
     "sort_index": 7,
-    "forecasts": [
+    "entries": [
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       }
     ]
@@ -141,17 +162,20 @@
     "owner": "",
     "budget": 13200,
     "sort_index": 8,
-    "forecasts": [
+    "entries": [
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 2300
       },
       {
         "month": "2027-03-01",
+        "type": "forecast",
         "amount_ex_vat": 4400
       },
       {
         "month": "2027-04-01",
+        "type": "forecast",
         "amount_ex_vat": 4500
       }
     ]
@@ -162,21 +186,25 @@
     "owner": "",
     "budget": 1600,
     "sort_index": 9,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 200
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 200
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 200
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 200
       }
     ]
@@ -187,29 +215,35 @@
     "owner": "",
     "budget": 7832,
     "sort_index": 10,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-09-01",
+        "type": "forecast",
         "amount_ex_vat": 460
       },
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 460
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 1157
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 1157
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 1157
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 1157
       }
     ]
@@ -220,25 +254,30 @@
     "owner": "",
     "budget": 21056,
     "sort_index": 11,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 883
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 883
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 2038
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 2038
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 4347
       }
     ]
@@ -249,17 +288,20 @@
     "owner": "",
     "budget": 951,
     "sort_index": 12,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 136
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 272
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 543
       }
     ]
@@ -270,25 +312,30 @@
     "owner": "",
     "budget": 2444,
     "sort_index": 13,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 475
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 475
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 543
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 408
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 543
       }
     ]
@@ -299,21 +346,25 @@
     "owner": "",
     "budget": 25000,
     "sort_index": 14,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 5000
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 5000
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 10000
       },
       {
         "month": "2027-04-01",
+        "type": "forecast",
         "amount_ex_vat": 5000
       }
     ]
@@ -324,17 +375,20 @@
     "owner": "",
     "budget": 5000,
     "sort_index": 15,
-    "forecasts": [
+    "entries": [
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2027-03-01",
+        "type": "forecast",
         "amount_ex_vat": 1500
       },
       {
         "month": "2027-04-01",
+        "type": "forecast",
         "amount_ex_vat": 1500
       }
     ]
@@ -345,9 +399,10 @@
     "owner": "",
     "budget": 3000,
     "sort_index": 16,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 3000
       }
     ]
@@ -358,13 +413,15 @@
     "owner": "",
     "budget": 7500,
     "sort_index": 17,
-    "forecasts": [
+    "entries": [
       {
         "month": "2027-03-01",
+        "type": "forecast",
         "amount_ex_vat": 3750
       },
       {
         "month": "2027-04-01",
+        "type": "forecast",
         "amount_ex_vat": 3750
       }
     ]
@@ -375,9 +432,10 @@
     "owner": "",
     "budget": 5000,
     "sort_index": 18,
-    "forecasts": [
+    "entries": [
       {
         "month": "2027-04-01",
+        "type": "forecast",
         "amount_ex_vat": 5000
       }
     ]
@@ -388,9 +446,10 @@
     "owner": "",
     "budget": 2000,
     "sort_index": 19,
-    "forecasts": [
+    "entries": [
       {
         "month": "2027-04-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       }
     ]
@@ -401,13 +460,15 @@
     "owner": "",
     "budget": 5000,
     "sort_index": 20,
-    "forecasts": [
+    "entries": [
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 2500
       },
       {
         "month": "2027-04-01",
+        "type": "forecast",
         "amount_ex_vat": 2500
       }
     ]
@@ -418,9 +479,10 @@
     "owner": "",
     "budget": 2000,
     "sort_index": 21,
-    "forecasts": [
+    "entries": [
       {
         "month": "2027-04-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       }
     ]
@@ -431,9 +493,15 @@
     "owner": "",
     "budget": 20000,
     "sort_index": 22,
-    "forecasts": [
+    "entries": [
       {
         "month": "2025-12-01",
+        "type": "forecast",
+        "amount_ex_vat": 29500
+      },
+      {
+        "month": "2025-12-01",
+        "type": "invoice",
         "amount_ex_vat": 29500
       }
     ]
@@ -444,10 +512,16 @@
     "owner": "",
     "budget": 4000,
     "sort_index": 23,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-03-01",
-        "amount_ex_vat": 6836
+        "type": "forecast",
+        "amount_ex_vat": 6835.5
+      },
+      {
+        "month": "2026-03-01",
+        "type": "invoice",
+        "amount_ex_vat": 6835.5
       }
     ]
   },
@@ -457,9 +531,10 @@
     "owner": "",
     "budget": 16000,
     "sort_index": 24,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-07-01",
+        "type": "forecast",
         "amount_ex_vat": 16000
       }
     ]
@@ -470,29 +545,35 @@
     "owner": "",
     "budget": 12000,
     "sort_index": 25,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-09-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       }
     ]
@@ -503,29 +584,35 @@
     "owner": "",
     "budget": 12000,
     "sort_index": 26,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-09-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       }
     ]
@@ -536,7 +623,7 @@
     "owner": "",
     "budget": 4000,
     "sort_index": 27,
-    "forecasts": []
+    "entries": []
   },
   {
     "name": "Contingency/Italian law queries during the construction phase Jan-Dec 2026",
@@ -544,33 +631,40 @@
     "owner": "",
     "budget": 7000,
     "sort_index": 28,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-08-01",
+        "type": "forecast",
         "amount_ex_vat": 1000
       },
       {
         "month": "2026-09-01",
+        "type": "forecast",
         "amount_ex_vat": 1000
       },
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 1000
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 1000
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 1000
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 1000
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 1000
       }
     ]
@@ -581,17 +675,20 @@
     "owner": "",
     "budget": 16800,
     "sort_index": 29,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 5000
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 5000
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 2800
       }
     ]
@@ -602,21 +699,25 @@
     "owner": "",
     "budget": 12000,
     "sort_index": 30,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 3000
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 3000
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 4000
       }
     ]
@@ -627,21 +728,35 @@
     "owner": "",
     "budget": 1500,
     "sort_index": 31,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-03-01",
-        "amount_ex_vat": 289
+        "type": "forecast",
+        "amount_ex_vat": 288.79
+      },
+      {
+        "month": "2026-03-01",
+        "type": "invoice",
+        "amount_ex_vat": 288.79
       },
       {
         "month": "2026-06-01",
-        "amount_ex_vat": 57
+        "type": "forecast",
+        "amount_ex_vat": 57.1
+      },
+      {
+        "month": "2026-06-01",
+        "type": "invoice",
+        "amount_ex_vat": 57.1
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 1000
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 1000
       }
     ]
@@ -652,13 +767,15 @@
     "owner": "",
     "budget": 10000,
     "sort_index": 32,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 5000
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 5000
       }
     ]
@@ -669,21 +786,25 @@
     "owner": "",
     "budget": 3500,
     "sort_index": 33,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-09-01",
+        "type": "forecast",
         "amount_ex_vat": 500
       },
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 1500
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 1000
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 500
       }
     ]
@@ -694,17 +815,20 @@
     "owner": "",
     "budget": 2000,
     "sort_index": 34,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-08-01",
+        "type": "forecast",
         "amount_ex_vat": 1000
       },
       {
         "month": "2026-09-01",
+        "type": "forecast",
         "amount_ex_vat": 500
       },
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 500
       }
     ]
@@ -715,21 +839,25 @@
     "owner": "",
     "budget": 2500,
     "sort_index": 35,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 750
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 750
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 500
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 500
       }
     ]
@@ -740,21 +868,30 @@
     "owner": "",
     "budget": 7500,
     "sort_index": 36,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-05-01",
-        "amount_ex_vat": 790
+        "type": "forecast",
+        "amount_ex_vat": 789.8
+      },
+      {
+        "month": "2026-05-01",
+        "type": "invoice",
+        "amount_ex_vat": 789.8
       },
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 2500
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 2500
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 2500
       }
     ]
@@ -765,50 +902,76 @@
     "owner": "",
     "budget": 46702,
     "sort_index": 37,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-04-01",
-        "amount_ex_vat": 4246
+        "type": "forecast",
+        "amount_ex_vat": 4245.67
+      },
+      {
+        "month": "2026-04-01",
+        "type": "invoice",
+        "amount_ex_vat": 4245.67
       },
       {
         "month": "2026-05-01",
-        "amount_ex_vat": 4246
+        "type": "forecast",
+        "amount_ex_vat": 4245.67
+      },
+      {
+        "month": "2026-05-01",
+        "type": "invoice",
+        "amount_ex_vat": 4245.67
       },
       {
         "month": "2026-06-01",
-        "amount_ex_vat": 4246
+        "type": "forecast",
+        "amount_ex_vat": 4245.67
+      },
+      {
+        "month": "2026-06-01",
+        "type": "invoice",
+        "amount_ex_vat": 4245.67
       },
       {
         "month": "2026-07-01",
-        "amount_ex_vat": 4246
+        "type": "forecast",
+        "amount_ex_vat": 4245.67
       },
       {
         "month": "2026-08-01",
-        "amount_ex_vat": 4246
+        "type": "forecast",
+        "amount_ex_vat": 4245.67
       },
       {
         "month": "2026-09-01",
-        "amount_ex_vat": 4246
+        "type": "forecast",
+        "amount_ex_vat": 4245.67
       },
       {
         "month": "2026-10-01",
-        "amount_ex_vat": 4246
+        "type": "forecast",
+        "amount_ex_vat": 4245.67
       },
       {
         "month": "2026-11-01",
-        "amount_ex_vat": 4246
+        "type": "forecast",
+        "amount_ex_vat": 4245.67
       },
       {
         "month": "2026-12-01",
-        "amount_ex_vat": 4246
+        "type": "forecast",
+        "amount_ex_vat": 4245.67
       },
       {
         "month": "2027-01-01",
-        "amount_ex_vat": 4246
+        "type": "forecast",
+        "amount_ex_vat": 4245.67
       },
       {
         "month": "2027-02-01",
-        "amount_ex_vat": 4246
+        "type": "forecast",
+        "amount_ex_vat": 4245.67
       }
     ]
   },
@@ -818,26 +981,31 @@
     "owner": "",
     "budget": 40000,
     "sort_index": 38,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-10-01",
-        "amount_ex_vat": 9167
+        "type": "forecast",
+        "amount_ex_vat": 9166.67
       },
       {
         "month": "2026-11-01",
-        "amount_ex_vat": 9167
+        "type": "forecast",
+        "amount_ex_vat": 9166.67
       },
       {
         "month": "2026-12-01",
-        "amount_ex_vat": 9167
+        "type": "forecast",
+        "amount_ex_vat": 9166.67
       },
       {
         "month": "2027-01-01",
-        "amount_ex_vat": 9167
+        "type": "forecast",
+        "amount_ex_vat": 9166.67
       },
       {
         "month": "2027-02-01",
-        "amount_ex_vat": 9167
+        "type": "forecast",
+        "amount_ex_vat": 9166.67
       }
     ]
   },
@@ -847,17 +1015,20 @@
     "owner": "",
     "budget": 60000,
     "sort_index": 39,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 4000
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 10000
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 35000
       }
     ]
@@ -868,29 +1039,35 @@
     "owner": "",
     "budget": 15000,
     "sort_index": 40,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-09-01",
+        "type": "forecast",
         "amount_ex_vat": 2200
       },
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 2200
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 2200
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 2200
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 2200
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 2200
       }
     ]
@@ -901,41 +1078,55 @@
     "owner": "",
     "budget": 18000,
     "sort_index": 41,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-06-01",
+        "type": "forecast",
+        "amount_ex_vat": 2000
+      },
+      {
+        "month": "2026-06-01",
+        "type": "invoice",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-07-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-08-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-09-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       }
     ]
@@ -946,13 +1137,20 @@
     "owner": "",
     "budget": 198984,
     "sort_index": 42,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-03-01",
+        "type": "forecast",
+        "amount_ex_vat": 57893
+      },
+      {
+        "month": "2026-03-01",
+        "type": "invoice",
         "amount_ex_vat": 57893
       },
       {
         "month": "2026-07-01",
+        "type": "forecast",
         "amount_ex_vat": 141091
       }
     ]
@@ -963,14 +1161,21 @@
     "owner": "",
     "budget": 166966,
     "sort_index": 43,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-03-01",
+        "type": "forecast",
+        "amount_ex_vat": 166966
+      },
+      {
+        "month": "2026-03-01",
+        "type": "invoice",
         "amount_ex_vat": 166966
       },
       {
         "month": "2026-07-01",
-        "amount_ex_vat": 41812
+        "type": "forecast",
+        "amount_ex_vat": 41812.35
       }
     ]
   },
@@ -980,17 +1185,25 @@
     "owner": "",
     "budget": 25000,
     "sort_index": 44,
-    "forecasts": [
+    "entries": [
       {
         "month": "2025-12-01",
+        "type": "forecast",
+        "amount_ex_vat": 12000
+      },
+      {
+        "month": "2025-12-01",
+        "type": "invoice",
         "amount_ex_vat": 12000
       },
       {
         "month": "2026-07-01",
+        "type": "forecast",
         "amount_ex_vat": 5000
       },
       {
         "month": "2026-08-01",
+        "type": "forecast",
         "amount_ex_vat": 3000
       }
     ]
@@ -1001,21 +1214,25 @@
     "owner": "",
     "budget": 4000,
     "sort_index": 45,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 1000
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 1000
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 1000
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 1000
       }
     ]
@@ -1026,21 +1243,25 @@
     "owner": "",
     "budget": 3900,
     "sort_index": 46,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 2100
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 600
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 600
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 600
       }
     ]
@@ -1051,21 +1272,25 @@
     "owner": "",
     "budget": 2000,
     "sort_index": 47,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 500
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 500
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 500
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 500
       }
     ]
@@ -1076,17 +1301,20 @@
     "owner": "",
     "budget": 600,
     "sort_index": 48,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 200
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 200
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 200
       }
     ]
@@ -1097,29 +1325,35 @@
     "owner": "",
     "budget": 17600,
     "sort_index": 49,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-09-01",
+        "type": "forecast",
         "amount_ex_vat": 1600
       },
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 3200
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 3200
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 3200
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 3200
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 3200
       }
     ]
@@ -1130,29 +1364,35 @@
     "owner": "",
     "budget": 2700,
     "sort_index": 50,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-09-01",
+        "type": "forecast",
         "amount_ex_vat": 450
       },
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 450
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 450
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 450
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 450
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 450
       }
     ]
@@ -1163,13 +1403,15 @@
     "owner": "",
     "budget": 400,
     "sort_index": 51,
-    "forecasts": [
+    "entries": [
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 200
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 200
       }
     ]
@@ -1180,13 +1422,15 @@
     "owner": "",
     "budget": 300,
     "sort_index": 52,
-    "forecasts": [
+    "entries": [
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 150
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 150
       }
     ]
@@ -1197,17 +1441,20 @@
     "owner": "",
     "budget": 6300,
     "sort_index": 53,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 2100
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 2100
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 2100
       }
     ]
@@ -1218,17 +1465,20 @@
     "owner": "",
     "budget": 510,
     "sort_index": 54,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 170
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 170
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 170
       }
     ]
@@ -1239,13 +1489,15 @@
     "owner": "",
     "budget": 40000,
     "sort_index": 55,
-    "forecasts": [
+    "entries": [
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 20000
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 20000
       }
     ]
@@ -1256,13 +1508,15 @@
     "owner": "",
     "budget": 2500,
     "sort_index": 56,
-    "forecasts": [
+    "entries": [
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 500
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 2000
       }
     ]
@@ -1273,13 +1527,15 @@
     "owner": "",
     "budget": 25000,
     "sort_index": 57,
-    "forecasts": [
+    "entries": [
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 10000
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 20000
       }
     ]
@@ -1290,41 +1546,55 @@
     "owner": "",
     "budget": 40000,
     "sort_index": 58,
-    "forecasts": [
+    "entries": [
       {
         "month": "2025-12-01",
+        "type": "forecast",
+        "amount_ex_vat": 2364
+      },
+      {
+        "month": "2025-12-01",
+        "type": "invoice",
         "amount_ex_vat": 2364
       },
       {
         "month": "2026-07-01",
+        "type": "forecast",
         "amount_ex_vat": 3000
       },
       {
         "month": "2026-08-01",
+        "type": "forecast",
         "amount_ex_vat": 2136
       },
       {
         "month": "2026-09-01",
+        "type": "forecast",
         "amount_ex_vat": 2500
       },
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 3000
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 4000
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 6000
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 8000
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 9000
       }
     ]
@@ -1335,45 +1605,65 @@
     "owner": "",
     "budget": 76800,
     "sort_index": 59,
-    "forecasts": [
+    "entries": [
       {
         "month": "2026-05-01",
-        "amount_ex_vat": 8835
+        "type": "forecast",
+        "amount_ex_vat": 8835.03
+      },
+      {
+        "month": "2026-05-01",
+        "type": "invoice",
+        "amount_ex_vat": 8835.03
       },
       {
         "month": "2026-06-01",
+        "type": "forecast",
+        "amount_ex_vat": 6400
+      },
+      {
+        "month": "2026-06-01",
+        "type": "invoice",
         "amount_ex_vat": 6400
       },
       {
         "month": "2026-07-01",
+        "type": "forecast",
         "amount_ex_vat": 6400
       },
       {
         "month": "2026-08-01",
+        "type": "forecast",
         "amount_ex_vat": 6400
       },
       {
         "month": "2026-09-01",
+        "type": "forecast",
         "amount_ex_vat": 6400
       },
       {
         "month": "2026-10-01",
+        "type": "forecast",
         "amount_ex_vat": 6400
       },
       {
         "month": "2026-11-01",
+        "type": "forecast",
         "amount_ex_vat": 6400
       },
       {
         "month": "2026-12-01",
+        "type": "forecast",
         "amount_ex_vat": 6400
       },
       {
         "month": "2027-01-01",
+        "type": "forecast",
         "amount_ex_vat": 6400
       },
       {
         "month": "2027-02-01",
+        "type": "forecast",
         "amount_ex_vat": 6400
       }
     ]

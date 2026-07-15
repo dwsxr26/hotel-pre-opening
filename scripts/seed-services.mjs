@@ -45,11 +45,13 @@ async function main() {
       .single()
     if (error) throw error
 
-    const entries = (line.forecasts || []).map((f) => ({
+    // Support both the typed `entries` shape and the older `forecasts` shape.
+    const src = line.entries || (line.forecasts || []).map((f) => ({ ...f, type: 'forecast' }))
+    const entries = src.map((e) => ({
       line_id: created.id,
-      month: f.month,
-      type: 'forecast',
-      amount_ex_vat: f.amount_ex_vat,
+      month: e.month,
+      type: e.type || 'forecast',
+      amount_ex_vat: e.amount_ex_vat,
       vat_pct: 22,
     }))
     if (entries.length) {
@@ -58,7 +60,7 @@ async function main() {
       entryCount += entries.length
     }
   }
-  console.log(`Seeded ${lines.length} service lines and ${entryCount} forecast entries.`)
+  console.log(`Seeded ${lines.length} service lines and ${entryCount} entries.`)
 }
 
 main().catch((err) => {
