@@ -1,20 +1,18 @@
 // Shared domain constants.
 
-export const STATUSES = ['Not ordered', 'Order placed', 'Order arrived', 'Returned']
+export const STATUSES = ['Not ordered', 'Order placed', 'Order complete']
 
 export const STATUS_CLASS = {
   'Not ordered': 'st-not',
   'Order placed': 'st-placed',
-  'Order arrived': 'st-arrived',
-  Returned: 'st-returned',
+  'Order complete': 'st-arrived',
 }
 
-// Bar-fill / dot colours matching each status: red, yellow, green, blue.
+// Bar-fill / dot colours matching each status: red, yellow, green.
 export const STATUS_COLOR = {
   'Not ordered': '#e5484d',
   'Order placed': '#eab308',
-  'Order arrived': '#30a46c',
-  Returned: '#3b82f6',
+  'Order complete': '#30a46c',
 }
 
 // Page-size choices for the orders grid.

@@ -39,8 +39,8 @@ const DEFAULT_VIEW = {
 }
 
 const TABS = [
-  { id: 'orders', label: 'Orders' },
-  { id: 'services', label: 'Services' },
+  { id: 'orders', label: 'OS&E Orders' },
+  { id: 'services', label: 'Overview' },
   { id: 'owner', label: 'Summary by owner' },
   { id: 'supplier', label: 'Summary by supplier' },
 ]
@@ -516,6 +516,7 @@ export default function App() {
           lines={serviceLines}
           entriesByLine={serviceEntries}
           closesByLine={serviceCloses}
+          items={items}
           isAdmin={!!myProfile?.is_admin}
           people={people}
           onLineUpdate={onServiceLineUpdate}

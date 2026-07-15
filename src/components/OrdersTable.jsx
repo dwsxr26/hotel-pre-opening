@@ -295,19 +295,27 @@ export default function OrdersTable({
       },
       {
         id: 'files',
-        header: 'Files',
-        size: 80,
+        header: 'Files & Comments',
+        size: 240,
         enableSorting: false,
         enableColumnFilter: false,
         meta: { filter: 'none' },
         cell: ({ row }) => (
-          <AttachmentsCell
-            itemId={row.original.id}
-            files={attachmentsByItem[row.original.id]}
-            onUpload={onUploadFiles}
-            onRemove={onRemoveAttachment}
-            onDownload={onDownloadAttachment}
-          />
+          <div className="files-cell">
+            <AttachmentsCell
+              itemId={row.original.id}
+              files={attachmentsByItem[row.original.id]}
+              onUpload={onUploadFiles}
+              onRemove={onRemoveAttachment}
+              onDownload={onDownloadAttachment}
+            />
+            <InlineTextCell
+              value={row.original.comment}
+              field="comment"
+              placeholder="Comment…"
+              onEdit={(patch) => onEdit(row.original.id, patch)}
+            />
+          </div>
         ),
       },
     ]
