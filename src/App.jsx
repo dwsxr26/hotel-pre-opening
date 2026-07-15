@@ -15,7 +15,6 @@ import Auth from './components/Auth'
 import Header from './components/Header'
 import Metrics from './components/Metrics'
 import OrdersTable from './components/OrdersTable'
-import Summary from './components/Summary'
 import ProfileModal from './components/ProfileModal'
 import InviteModal from './components/InviteModal'
 import ServicesTab from './components/services/ServicesTab'
@@ -41,8 +40,6 @@ const DEFAULT_VIEW = {
 const TABS = [
   { id: 'orders', label: 'OS&E Orders' },
   { id: 'services', label: 'Overview' },
-  { id: 'owner', label: 'Summary by owner' },
-  { id: 'supplier', label: 'Summary by supplier' },
 ]
 
 export default function App() {
@@ -511,7 +508,7 @@ export default function App() {
             onDownloadAttachment={onDownloadAttachment}
           />
         </>
-      ) : tab === 'services' ? (
+      ) : (
         <ServicesTab
           lines={serviceLines}
           entriesByLine={serviceEntries}
@@ -524,10 +521,6 @@ export default function App() {
           onDownload={onServiceDownload}
           onReopen={onServiceMonthReopen}
         />
-      ) : tab === 'owner' ? (
-        <Summary items={items} departments={departments} groupKey="owner" groupLabel="Owner" blankLabel="Unassigned" />
-      ) : (
-        <Summary items={items} departments={departments} groupKey="supplier" groupLabel="Supplier" blankLabel="(No supplier)" />
       )}
 
       {showProfile && (
