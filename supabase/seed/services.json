@@ -46,26 +46,6 @@
       {
         "month": "2027-02-01",
         "amount_ex_vat": 2000
-      },
-      {
-        "month": "2027-03-01",
-        "amount_ex_vat": 2500
-      },
-      {
-        "month": "2027-04-01",
-        "amount_ex_vat": 2500
-      },
-      {
-        "month": "2027-05-01",
-        "amount_ex_vat": 2500
-      },
-      {
-        "month": "2027-06-01",
-        "amount_ex_vat": 2500
-      },
-      {
-        "month": "2027-07-01",
-        "amount_ex_vat": 2500
       }
     ]
   },
@@ -100,19 +80,11 @@
     ]
   },
   {
-    "name": "Videoshoot (included in Diginauts scope)",
-    "department": "Marketing",
-    "owner": "",
-    "budget": 0,
-    "sort_index": 4,
-    "forecasts": []
-  },
-  {
     "name": "Videoshoot Lifestyle February",
     "department": "Marketing",
     "owner": "",
     "budget": 4000,
-    "sort_index": 5,
+    "sort_index": 4,
     "forecasts": [
       {
         "month": "2027-02-01",
@@ -125,7 +97,7 @@
     "department": "Marketing",
     "owner": "",
     "budget": 4000,
-    "sort_index": 6,
+    "sort_index": 5,
     "forecasts": [
       {
         "month": "2027-02-01",
@@ -138,7 +110,7 @@
     "department": "Marketing",
     "owner": "",
     "budget": 15000,
-    "sort_index": 7,
+    "sort_index": 6,
     "forecasts": [
       {
         "month": "2026-07-01",
@@ -155,7 +127,7 @@
     "department": "Marketing",
     "owner": "",
     "budget": 2000,
-    "sort_index": 8,
+    "sort_index": 7,
     "forecasts": [
       {
         "month": "2027-02-01",
@@ -168,7 +140,7 @@
     "department": "Marketing",
     "owner": "",
     "budget": 13200,
-    "sort_index": 9,
+    "sort_index": 8,
     "forecasts": [
       {
         "month": "2027-02-01",
@@ -181,10 +153,6 @@
       {
         "month": "2027-04-01",
         "amount_ex_vat": 4500
-      },
-      {
-        "month": "2027-05-01",
-        "amount_ex_vat": 3000
       }
     ]
   },
@@ -193,7 +161,7 @@
     "department": "Marketing",
     "owner": "",
     "budget": 1600,
-    "sort_index": 10,
+    "sort_index": 9,
     "forecasts": [
       {
         "month": "2026-10-01",
@@ -210,22 +178,6 @@
       {
         "month": "2027-01-01",
         "amount_ex_vat": 200
-      },
-      {
-        "month": "2027-02-01",
-        "amount_ex_vat": 200
-      },
-      {
-        "month": "2027-03-01",
-        "amount_ex_vat": 200
-      },
-      {
-        "month": "2027-04-01",
-        "amount_ex_vat": 200
-      },
-      {
-        "month": "2027-05-01",
-        "amount_ex_vat": 200
       }
     ]
   },
@@ -234,7 +186,7 @@
     "department": "Marketing",
     "owner": "",
     "budget": 7832,
-    "sort_index": 11,
+    "sort_index": 10,
     "forecasts": [
       {
         "month": "2026-09-01",
@@ -259,14 +211,6 @@
       {
         "month": "2027-02-01",
         "amount_ex_vat": 1157
-      },
-      {
-        "month": "2027-03-01",
-        "amount_ex_vat": 1157
-      },
-      {
-        "month": "2027-04-01",
-        "amount_ex_vat": 1157
       }
     ]
   },
@@ -275,7 +219,7 @@
     "department": "Marketing",
     "owner": "",
     "budget": 21056,
-    "sort_index": 12,
+    "sort_index": 11,
     "forecasts": [
       {
         "month": "2026-10-01",
@@ -296,14 +240,6 @@
       {
         "month": "2027-02-01",
         "amount_ex_vat": 4347
-      },
-      {
-        "month": "2027-03-01",
-        "amount_ex_vat": 4347
-      },
-      {
-        "month": "2027-04-01",
-        "amount_ex_vat": 6520
       }
     ]
   },
@@ -311,8 +247,8 @@
     "name": "F&B Ads",
     "department": "Marketing",
     "owner": "",
-    "budget": 2309,
-    "sort_index": 13,
+    "budget": 951,
+    "sort_index": 12,
     "forecasts": [
       {
         "month": "2026-12-01",
@@ -325,14 +261,6 @@
       {
         "month": "2027-02-01",
         "amount_ex_vat": 543
-      },
-      {
-        "month": "2027-03-01",
-        "amount_ex_vat": 543
-      },
-      {
-        "month": "2027-04-01",
-        "amount_ex_vat": 815
       }
     ]
   },
@@ -340,8 +268,8 @@
     "name": "Branded Ads",
     "department": "Marketing",
     "owner": "",
-    "budget": 3802,
-    "sort_index": 14,
+    "budget": 2444,
+    "sort_index": 13,
     "forecasts": [
       {
         "month": "2026-10-01",
@@ -362,14 +290,6 @@
       {
         "month": "2027-02-01",
         "amount_ex_vat": 543
-      },
-      {
-        "month": "2027-03-01",
-        "amount_ex_vat": 543
-      },
-      {
-        "month": "2027-04-01",
-        "amount_ex_vat": 815
       }
     ]
   },
@@ -378,7 +298,7 @@
     "department": "Marketing",
     "owner": "",
     "budget": 25000,
-    "sort_index": 15,
+    "sort_index": 14,
     "forecasts": [
       {
         "month": "2026-11-01",
@@ -403,7 +323,7 @@
     "department": "Marketing",
     "owner": "",
     "budget": 5000,
-    "sort_index": 16,
+    "sort_index": 15,
     "forecasts": [
       {
         "month": "2027-02-01",
@@ -424,7 +344,7 @@
     "department": "Marketing",
     "owner": "",
     "budget": 3000,
-    "sort_index": 17,
+    "sort_index": 16,
     "forecasts": [
       {
         "month": "2026-10-01",
@@ -437,7 +357,7 @@
     "department": "Marketing",
     "owner": "",
     "budget": 7500,
-    "sort_index": 18,
+    "sort_index": 17,
     "forecasts": [
       {
         "month": "2027-03-01",
@@ -454,7 +374,7 @@
     "department": "Marketing",
     "owner": "",
     "budget": 5000,
-    "sort_index": 19,
+    "sort_index": 18,
     "forecasts": [
       {
         "month": "2027-04-01",
@@ -467,7 +387,7 @@
     "department": "Marketing",
     "owner": "",
     "budget": 2000,
-    "sort_index": 20,
+    "sort_index": 19,
     "forecasts": [
       {
         "month": "2027-04-01",
@@ -480,7 +400,7 @@
     "department": "Marketing",
     "owner": "",
     "budget": 5000,
-    "sort_index": 21,
+    "sort_index": 20,
     "forecasts": [
       {
         "month": "2027-01-01",
@@ -497,7 +417,7 @@
     "department": "Marketing",
     "owner": "",
     "budget": 2000,
-    "sort_index": 22,
+    "sort_index": 21,
     "forecasts": [
       {
         "month": "2027-04-01",
@@ -506,24 +426,11 @@
     ]
   },
   {
-    "name": "Contracts Review and Advice",
-    "department": "Legal",
-    "owner": "",
-    "budget": 0,
-    "sort_index": 23,
-    "forecasts": [
-      {
-        "month": "2025-12-01",
-        "amount_ex_vat": 1800
-      }
-    ]
-  },
-  {
     "name": "Construction Agreement",
     "department": "Legal",
     "owner": "",
     "budget": 20000,
-    "sort_index": 24,
+    "sort_index": 22,
     "forecasts": [
       {
         "month": "2025-12-01",
@@ -536,27 +443,24 @@
     "department": "Legal",
     "owner": "",
     "budget": 4000,
-    "sort_index": 25,
-    "forecasts": []
-  },
-  {
-    "name": "Assistance in the FF&E construction agreement with Factory and Senci",
-    "department": "Legal",
-    "owner": "",
-    "budget": 6836,
-    "sort_index": 26,
+    "sort_index": 23,
     "forecasts": [
       {
         "month": "2026-03-01",
         "amount_ex_vat": 6836
-      },
+      }
+    ]
+  },
+  {
+    "name": "Assistance in the FF&E construction agreement with Factory and Sintesi",
+    "department": "Legal",
+    "owner": "",
+    "budget": 16000,
+    "sort_index": 24,
+    "forecasts": [
       {
         "month": "2026-07-01",
-        "amount_ex_vat": 2000
-      },
-      {
-        "month": "2026-08-01",
-        "amount_ex_vat": 2000
+        "amount_ex_vat": 16000
       }
     ]
   },
@@ -565,88 +469,64 @@
     "department": "Legal",
     "owner": "",
     "budget": 12000,
-    "sort_index": 27,
+    "sort_index": 25,
     "forecasts": [
       {
-        "month": "2026-07-01",
-        "amount_ex_vat": 500
-      },
-      {
-        "month": "2026-08-01",
-        "amount_ex_vat": 1500
-      },
-      {
         "month": "2026-09-01",
-        "amount_ex_vat": 1500
+        "amount_ex_vat": 2000
       },
       {
         "month": "2026-10-01",
-        "amount_ex_vat": 1500
+        "amount_ex_vat": 2000
       },
       {
         "month": "2026-11-01",
-        "amount_ex_vat": 1500
+        "amount_ex_vat": 2000
       },
       {
         "month": "2026-12-01",
-        "amount_ex_vat": 1000
+        "amount_ex_vat": 2000
       },
       {
         "month": "2027-01-01",
-        "amount_ex_vat": 1000
+        "amount_ex_vat": 2000
       },
       {
         "month": "2027-02-01",
-        "amount_ex_vat": 1000
+        "amount_ex_vat": 2000
       }
     ]
-  },
-  {
-    "name": "Corporate Work to Date",
-    "department": "Legal",
-    "owner": "",
-    "budget": 17164,
-    "sort_index": 28,
-    "forecasts": []
   },
   {
     "name": "Corporate Work 2026 (if necessary)",
     "department": "Legal",
     "owner": "",
     "budget": 12000,
-    "sort_index": 29,
+    "sort_index": 26,
     "forecasts": [
       {
-        "month": "2026-07-01",
-        "amount_ex_vat": 2000
-      },
-      {
-        "month": "2026-08-01",
-        "amount_ex_vat": 2000
-      },
-      {
         "month": "2026-09-01",
-        "amount_ex_vat": 1500
+        "amount_ex_vat": 2000
       },
       {
         "month": "2026-10-01",
-        "amount_ex_vat": 1500
+        "amount_ex_vat": 2000
       },
       {
         "month": "2026-11-01",
-        "amount_ex_vat": 500
+        "amount_ex_vat": 2000
       },
       {
         "month": "2026-12-01",
-        "amount_ex_vat": 500
+        "amount_ex_vat": 2000
       },
       {
         "month": "2027-01-01",
-        "amount_ex_vat": 500
+        "amount_ex_vat": 2000
       },
       {
         "month": "2027-02-01",
-        "amount_ex_vat": 500
+        "amount_ex_vat": 2000
       }
     ]
   },
@@ -655,64 +535,43 @@
     "department": "Legal",
     "owner": "",
     "budget": 4000,
-    "sort_index": 30,
-    "forecasts": [
-      {
-        "month": "2026-10-01",
-        "amount_ex_vat": 1500
-      },
-      {
-        "month": "2026-11-01",
-        "amount_ex_vat": 1000
-      },
-      {
-        "month": "2026-12-01",
-        "amount_ex_vat": 1000
-      },
-      {
-        "month": "2027-01-01",
-        "amount_ex_vat": 500
-      }
-    ]
+    "sort_index": 27,
+    "forecasts": []
   },
   {
     "name": "Contingency/Italian law queries during the construction phase Jan-Dec 2026",
     "department": "Legal",
     "owner": "",
     "budget": 7000,
-    "sort_index": 31,
+    "sort_index": 28,
     "forecasts": [
       {
-        "month": "2026-07-01",
-        "amount_ex_vat": 500
-      },
-      {
         "month": "2026-08-01",
-        "amount_ex_vat": 500
+        "amount_ex_vat": 1000
       },
       {
         "month": "2026-09-01",
-        "amount_ex_vat": 500
+        "amount_ex_vat": 1000
       },
       {
         "month": "2026-10-01",
-        "amount_ex_vat": 500
+        "amount_ex_vat": 1000
       },
       {
         "month": "2026-11-01",
-        "amount_ex_vat": 500
+        "amount_ex_vat": 1000
       },
       {
         "month": "2026-12-01",
-        "amount_ex_vat": 500
+        "amount_ex_vat": 1000
       },
       {
         "month": "2027-01-01",
-        "amount_ex_vat": 500
+        "amount_ex_vat": 1000
       },
       {
         "month": "2027-02-01",
-        "amount_ex_vat": 500
+        "amount_ex_vat": 1000
       }
     ]
   },
@@ -721,7 +580,7 @@
     "department": "HR",
     "owner": "",
     "budget": 16800,
-    "sort_index": 32,
+    "sort_index": 29,
     "forecasts": [
       {
         "month": "2026-11-01",
@@ -741,24 +600,24 @@
     "name": "External Meeting Room & Lunch (2 weeks)",
     "department": "HR",
     "owner": "",
-    "budget": 16000,
-    "sort_index": 33,
+    "budget": 12000,
+    "sort_index": 30,
     "forecasts": [
       {
         "month": "2026-10-01",
-        "amount_ex_vat": 3000
+        "amount_ex_vat": 2000
       },
       {
         "month": "2026-11-01",
-        "amount_ex_vat": 4000
+        "amount_ex_vat": 3000
       },
       {
         "month": "2026-12-01",
-        "amount_ex_vat": 4000
+        "amount_ex_vat": 3000
       },
       {
         "month": "2027-01-01",
-        "amount_ex_vat": 5000
+        "amount_ex_vat": 4000
       }
     ]
   },
@@ -767,7 +626,7 @@
     "department": "HR",
     "owner": "",
     "budget": 1500,
-    "sort_index": 34,
+    "sort_index": 31,
     "forecasts": [
       {
         "month": "2026-03-01",
@@ -788,11 +647,28 @@
     ]
   },
   {
+    "name": "HR Legal Costs - Employee Handbook",
+    "department": "HR",
+    "owner": "",
+    "budget": 10000,
+    "sort_index": 32,
+    "forecasts": [
+      {
+        "month": "2026-11-01",
+        "amount_ex_vat": 5000
+      },
+      {
+        "month": "2026-12-01",
+        "amount_ex_vat": 5000
+      }
+    ]
+  },
+  {
     "name": "Social Media Recruitment - Tiktok & Meta (Instagram) Ads Daily Budget of €100-€150 recommended for enough visibility. 2x to run different ads (for F&B & front office)",
     "department": "HR",
     "owner": "",
     "budget": 3500,
-    "sort_index": 35,
+    "sort_index": 33,
     "forecasts": [
       {
         "month": "2026-09-01",
@@ -817,7 +693,7 @@
     "department": "HR",
     "owner": "",
     "budget": 2000,
-    "sort_index": 36,
+    "sort_index": 34,
     "forecasts": [
       {
         "month": "2026-08-01",
@@ -838,7 +714,7 @@
     "department": "HR",
     "owner": "",
     "budget": 2500,
-    "sort_index": 37,
+    "sort_index": 35,
     "forecasts": [
       {
         "month": "2026-10-01",
@@ -863,7 +739,7 @@
     "department": "HR",
     "owner": "",
     "budget": 7500,
-    "sort_index": 38,
+    "sort_index": 36,
     "forecasts": [
       {
         "month": "2026-05-01",
@@ -884,11 +760,11 @@
     ]
   },
   {
-    "name": "Ongoing Salary Andi - Reception Manager",
+    "name": "Ongoing Salary - Reception Manager",
     "department": "HR",
     "owner": "",
     "budget": 46702,
-    "sort_index": 39,
+    "sort_index": 37,
     "forecasts": [
       {
         "month": "2026-04-01",
@@ -941,7 +817,7 @@
     "department": "HR",
     "owner": "",
     "budget": 40000,
-    "sort_index": 40,
+    "sort_index": 38,
     "forecasts": [
       {
         "month": "2026-10-01",
@@ -970,7 +846,7 @@
     "department": "HR",
     "owner": "",
     "budget": 60000,
-    "sort_index": 41,
+    "sort_index": 39,
     "forecasts": [
       {
         "month": "2026-12-01",
@@ -991,7 +867,7 @@
     "department": "HR",
     "owner": "",
     "budget": 15000,
-    "sort_index": 42,
+    "sort_index": 40,
     "forecasts": [
       {
         "month": "2026-09-01",
@@ -1024,7 +900,7 @@
     "department": "HR",
     "owner": "",
     "budget": 18000,
-    "sort_index": 43,
+    "sort_index": 41,
     "forecasts": [
       {
         "month": "2026-06-01",
@@ -1069,7 +945,7 @@
     "department": "HR",
     "owner": "",
     "budget": 198984,
-    "sort_index": 44,
+    "sort_index": 42,
     "forecasts": [
       {
         "month": "2026-03-01",
@@ -1086,7 +962,7 @@
     "department": "HR",
     "owner": "",
     "budget": 166966,
-    "sort_index": 45,
+    "sort_index": 43,
     "forecasts": [
       {
         "month": "2026-03-01",
@@ -1094,7 +970,7 @@
       },
       {
         "month": "2026-07-01",
-        "amount_ex_vat": 38776
+        "amount_ex_vat": 41812
       }
     ]
   },
@@ -1103,7 +979,7 @@
     "department": "HR",
     "owner": "",
     "budget": 25000,
-    "sort_index": 46,
+    "sort_index": 44,
     "forecasts": [
       {
         "month": "2025-12-01",
@@ -1123,24 +999,24 @@
     "name": "IT - Administrative & General (Exact, Keeper, Oneteam, Office365)",
     "department": "IT",
     "owner": "",
-    "budget": 8000,
-    "sort_index": 47,
+    "budget": 4000,
+    "sort_index": 45,
     "forecasts": [
       {
         "month": "2026-11-01",
-        "amount_ex_vat": 2000
+        "amount_ex_vat": 1000
       },
       {
         "month": "2026-12-01",
-        "amount_ex_vat": 2000
+        "amount_ex_vat": 1000
       },
       {
         "month": "2027-01-01",
-        "amount_ex_vat": 2000
+        "amount_ex_vat": 1000
       },
       {
         "month": "2027-02-01",
-        "amount_ex_vat": 2000
+        "amount_ex_vat": 1000
       }
     ]
   },
@@ -1149,7 +1025,7 @@
     "department": "IT",
     "owner": "",
     "budget": 3900,
-    "sort_index": 48,
+    "sort_index": 46,
     "forecasts": [
       {
         "month": "2026-11-01",
@@ -1174,7 +1050,7 @@
     "department": "IT",
     "owner": "",
     "budget": 2000,
-    "sort_index": 49,
+    "sort_index": 47,
     "forecasts": [
       {
         "month": "2026-11-01",
@@ -1199,7 +1075,7 @@
     "department": "IT",
     "owner": "",
     "budget": 600,
-    "sort_index": 50,
+    "sort_index": 48,
     "forecasts": [
       {
         "month": "2026-12-01",
@@ -1220,7 +1096,7 @@
     "department": "IT",
     "owner": "",
     "budget": 17600,
-    "sort_index": 51,
+    "sort_index": 49,
     "forecasts": [
       {
         "month": "2026-09-01",
@@ -1253,7 +1129,7 @@
     "department": "IT",
     "owner": "",
     "budget": 2700,
-    "sort_index": 52,
+    "sort_index": 50,
     "forecasts": [
       {
         "month": "2026-09-01",
@@ -1286,7 +1162,7 @@
     "department": "IT",
     "owner": "",
     "budget": 400,
-    "sort_index": 53,
+    "sort_index": 51,
     "forecasts": [
       {
         "month": "2027-01-01",
@@ -1303,7 +1179,7 @@
     "department": "IT",
     "owner": "",
     "budget": 300,
-    "sort_index": 54,
+    "sort_index": 52,
     "forecasts": [
       {
         "month": "2027-01-01",
@@ -1320,7 +1196,7 @@
     "department": "IT",
     "owner": "",
     "budget": 6300,
-    "sort_index": 55,
+    "sort_index": 53,
     "forecasts": [
       {
         "month": "2026-12-01",
@@ -1341,7 +1217,7 @@
     "department": "IT",
     "owner": "",
     "budget": 510,
-    "sort_index": 56,
+    "sort_index": 54,
     "forecasts": [
       {
         "month": "2026-12-01",
@@ -1358,48 +1234,11 @@
     ]
   },
   {
-    "name": "Complete OS&E and operations supply list (see separate list)",
-    "department": "OS&E",
-    "owner": "",
-    "budget": 170000,
-    "sort_index": 57,
-    "forecasts": [
-      {
-        "month": "2026-07-01",
-        "amount_ex_vat": 5000
-      },
-      {
-        "month": "2026-08-01",
-        "amount_ex_vat": 10000
-      },
-      {
-        "month": "2026-09-01",
-        "amount_ex_vat": 20000
-      },
-      {
-        "month": "2026-10-01",
-        "amount_ex_vat": 20000
-      },
-      {
-        "month": "2026-11-01",
-        "amount_ex_vat": 30000
-      },
-      {
-        "month": "2026-12-01",
-        "amount_ex_vat": 40000
-      },
-      {
-        "month": "2027-01-01",
-        "amount_ex_vat": 45000
-      }
-    ]
-  },
-  {
     "name": "Working Capital - F&B inventory (food, beverages, grab&go)",
     "department": "General",
     "owner": "",
     "budget": 40000,
-    "sort_index": 58,
+    "sort_index": 55,
     "forecasts": [
       {
         "month": "2027-01-01",
@@ -1415,8 +1254,8 @@
     "name": "Working Capital - Room inventory (toilet paper, coffee, tea etc)",
     "department": "General",
     "owner": "",
-    "budget": 3500,
-    "sort_index": 59,
+    "budget": 2500,
+    "sort_index": 56,
     "forecasts": [
       {
         "month": "2027-01-01",
@@ -1424,7 +1263,7 @@
       },
       {
         "month": "2027-02-01",
-        "amount_ex_vat": 3000
+        "amount_ex_vat": 2000
       }
     ]
   },
@@ -1433,7 +1272,7 @@
     "department": "General",
     "owner": "",
     "budget": 25000,
-    "sort_index": 60,
+    "sort_index": 57,
     "forecasts": [
       {
         "month": "2027-01-01",
@@ -1450,7 +1289,7 @@
     "department": "General",
     "owner": "",
     "budget": 40000,
-    "sort_index": 61,
+    "sort_index": 58,
     "forecasts": [
       {
         "month": "2025-12-01",
@@ -1462,31 +1301,31 @@
       },
       {
         "month": "2026-08-01",
-        "amount_ex_vat": 1500
+        "amount_ex_vat": 2136
       },
       {
         "month": "2026-09-01",
-        "amount_ex_vat": 1500
+        "amount_ex_vat": 2500
       },
       {
         "month": "2026-10-01",
-        "amount_ex_vat": 2000
-      },
-      {
-        "month": "2026-11-01",
         "amount_ex_vat": 3000
       },
       {
+        "month": "2026-11-01",
+        "amount_ex_vat": 4000
+      },
+      {
         "month": "2026-12-01",
-        "amount_ex_vat": 5000
+        "amount_ex_vat": 6000
       },
       {
         "month": "2027-01-01",
-        "amount_ex_vat": 7000
+        "amount_ex_vat": 8000
       },
       {
         "month": "2027-02-01",
-        "amount_ex_vat": 7000
+        "amount_ex_vat": 9000
       }
     ]
   },
@@ -1495,7 +1334,7 @@
     "department": "General",
     "owner": "",
     "budget": 76800,
-    "sort_index": 62,
+    "sort_index": 59,
     "forecasts": [
       {
         "month": "2026-05-01",
@@ -1536,35 +1375,6 @@
       {
         "month": "2027-02-01",
         "amount_ex_vat": 6400
-      }
-    ]
-  },
-  {
-    "name": "OS&E Consultant",
-    "department": "General",
-    "owner": "",
-    "budget": 7500,
-    "sort_index": 63,
-    "forecasts": [
-      {
-        "month": "2026-09-01",
-        "amount_ex_vat": 1500
-      },
-      {
-        "month": "2026-10-01",
-        "amount_ex_vat": 1500
-      },
-      {
-        "month": "2026-11-01",
-        "amount_ex_vat": 1500
-      },
-      {
-        "month": "2026-12-01",
-        "amount_ex_vat": 1500
-      },
-      {
-        "month": "2027-01-01",
-        "amount_ex_vat": 1500
       }
     ]
   }
