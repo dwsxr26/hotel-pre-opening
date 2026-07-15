@@ -365,6 +365,7 @@ a.btn { text-decoration: none; }
 .svc-cell-btn:hover { background: hsl(200 40% 96%); box-shadow: inset 0 0 0 1px var(--ring); border-radius: 4px; }
 .svc-grid td.svc-closed .svc-cell-btn { color: var(--muted-fg); font-style: italic; }
 .svc-total-row td { font-weight: 700; border-top: 2px solid var(--border); }
+.svc-subtotal-row td { font-weight: 600; border-top: 1px solid var(--border); color: var(--muted-fg); }
 
 /* month entries modal */
 .me-modal { max-width: 620px; position: relative; }

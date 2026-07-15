@@ -3,7 +3,16 @@ import { ChevronDown, Minus, Plus } from 'lucide-react'
 import { formatMoney } from '../../lib/format'
 import { aggregate } from '../../lib/serviceCalc'
 
-function MiniTable({ label, rows, totals }) {
+const cells = (r) => (
+  <>
+    <td className="num">{formatMoney(r.budget)}</td>
+    <td className="num">{formatMoney(r.spent)}</td>
+    <td className="num">{formatMoney(r.reforecast)}</td>
+    <td className="num">{formatMoney(r.remaining)}</td>
+  </>
+)
+
+function MiniTable({ label, rows, subtotal, osne, grand }) {
   return (
     <div className="card overflow-hidden" style={{ flex: 1, minWidth: 320 }}>
       <div className="card-hd">By {label}</div>
@@ -22,21 +31,14 @@ function MiniTable({ label, rows, totals }) {
             {rows.map((r) => (
               <tr key={r.name}>
                 <td>{r.name}</td>
-                <td className="num">{formatMoney(r.budget)}</td>
-                <td className="num">{formatMoney(r.spent)}</td>
-                <td className={`num ${r.reforecast > r.budget + 0.5 ? 'svc-over' : ''}`}>{formatMoney(r.reforecast)}</td>
-                <td className="num">{formatMoney(r.remaining)}</td>
+                {cells(r)}
               </tr>
             ))}
           </tbody>
           <tfoot>
-            <tr className="svc-total-row">
-              <td>Total</td>
-              <td className="num">{formatMoney(totals.budget)}</td>
-              <td className="num">{formatMoney(totals.spent)}</td>
-              <td className="num">{formatMoney(totals.reforecast)}</td>
-              <td className="num">{formatMoney(totals.remaining)}</td>
-            </tr>
+            <tr className="svc-subtotal-row"><td>Sub-Total Services</td>{cells(subtotal)}</tr>
+            <tr><td>OS&amp;E Orders</td>{cells(osne)}</tr>
+            <tr className="svc-total-row"><td>Total</td>{cells(grand)}</tr>
           </tfoot>
         </table>
       </div>
@@ -44,10 +46,9 @@ function MiniTable({ label, rows, totals }) {
   )
 }
 
-const OSNE_BUDGET = 165000
-
-// Collapsible "Metrics" for the Overview tab: a programme summary (OS&E +
-// Services) plus the Services breakdown by Department and by Owner.
+// Collapsible "Metrics" for the Overview tab: Services broken down by Department
+// and by Owner, each footed with Sub-Total Services, an OS&E Orders line (pulled
+// from the Orders items), and a combined Total.
 export default function ServicesMetrics({ lines, entriesByLine, closesByLine, items = [], incl, open, onToggle, zoom = 1, onZoom }) {
   const { byDept, byOwner, totals } = useMemo(() => {
     const group = (keyFn) => {
@@ -64,23 +65,21 @@ export default function ServicesMetrics({ lines, entriesByLine, closesByLine, it
     }
   }, [lines, entriesByLine, closesByLine, incl])
 
-  // Programme summary (always ex-VAT). OS&E pulls from the Orders items:
-  // spent = placed/complete lines, remaining = not-ordered lines.
-  const programme = useMemo(() => {
+  // OS&E line pulled from the Orders items (ex-VAT): budget = locked per-line
+  // budgets; spent = ordered/completed line totals; remaining = not-ordered.
+  const osne = useMemo(() => {
     const lineTot = (r) => (Number(r.qty) || 0) * (Number(r.unit_price) || 0)
-    const osneSpent = items.filter((r) => r.status === 'Order placed' || r.status === 'Order complete').reduce((s, r) => s + lineTot(r), 0)
-    const osneRemaining = items.filter((r) => r.status === 'Not ordered').reduce((s, r) => s + lineTot(r), 0)
-    const svc = aggregate(lines, entriesByLine, closesByLine, false)
-    const osne = { name: 'OS&E', budget: OSNE_BUDGET, spent: osneSpent, remaining: osneRemaining }
-    const services = { name: 'Services', budget: svc.budget, spent: svc.spent, remaining: svc.remaining }
-    const total = {
-      name: 'Total',
-      budget: osne.budget + services.budget,
-      spent: osne.spent + services.spent,
-      remaining: osne.remaining + services.remaining,
-    }
-    return { osne, services, total }
-  }, [items, lines, entriesByLine, closesByLine])
+    const budget = items.reduce((s, r) => s + (Number(r.budget) || 0), 0)
+    const spent = items.filter((r) => r.status === 'Order placed' || r.status === 'Order complete').reduce((s, r) => s + lineTot(r), 0)
+    const remaining = items.filter((r) => r.status === 'Not ordered').reduce((s, r) => s + lineTot(r), 0)
+    return { budget, spent, remaining, reforecast: spent + remaining }
+  }, [items])
+  const grand = {
+    budget: totals.budget + osne.budget,
+    spent: totals.spent + osne.spent,
+    reforecast: totals.reforecast + osne.reforecast,
+    remaining: totals.remaining + osne.remaining,
+  }
 
   return (
     <div className="card" style={{ marginBottom: 16 }}>
@@ -99,39 +98,9 @@ export default function ServicesMetrics({ lines, entriesByLine, closesByLine, it
         )}
       </div>
       {open && (
-        <div className="summary-pad" style={{ paddingTop: 0, zoom }}>
-          <div className="card overflow-hidden" style={{ marginBottom: 16 }}>
-            <div className="card-hd">Programme summary (ex VAT)</div>
-            <div style={{ overflowX: 'auto' }}>
-              <table className="summary-table">
-                <thead>
-                  <tr><th>Area</th><th className="num">Budget</th><th className="num">Spent</th><th className="num">Remaining</th></tr>
-                </thead>
-                <tbody>
-                  {[programme.osne, programme.services].map((r) => (
-                    <tr key={r.name}>
-                      <td>{r.name}</td>
-                      <td className="num">{formatMoney(r.budget)}</td>
-                      <td className="num">{formatMoney(r.spent)}</td>
-                      <td className="num">{formatMoney(r.remaining)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="svc-total-row">
-                    <td>{programme.total.name}</td>
-                    <td className="num">{formatMoney(programme.total.budget)}</td>
-                    <td className="num">{formatMoney(programme.total.spent)}</td>
-                    <td className="num">{formatMoney(programme.total.remaining)}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <MiniTable label="Department" rows={byDept} totals={totals} />
-            <MiniTable label="Owner" rows={byOwner} totals={totals} />
-          </div>
+        <div className="summary-pad" style={{ paddingTop: 0, display: 'flex', gap: 16, flexWrap: 'wrap', zoom }}>
+          <MiniTable label="Department" rows={byDept} subtotal={totals} osne={osne} grand={grand} />
+          <MiniTable label="Owner" rows={byOwner} subtotal={totals} osne={osne} grand={grand} />
         </div>
       )}
     </div>

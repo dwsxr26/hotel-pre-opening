@@ -2,7 +2,7 @@ import { lineTotal } from './format'
 
 const HEADERS = [
   'Package', 'Item', 'Category', 'Department', 'Owner', 'Status', 'Qty',
-  'Unit price', 'VAT %', 'Unit incl. VAT', 'Total', 'Supplier', 'Order date', 'Invoice #', 'Order #',
+  'Unit price', 'VAT %', 'Unit incl. VAT', 'Total', 'Budget', 'Supplier', 'Order date', 'Invoice #', 'Order #',
   'Est. arrival', 'Description/ref',
 ]
 
@@ -19,7 +19,7 @@ export function itemsToCsv(rows) {
       [
         r.package, r.item, r.category, r.department, r.owner, r.status, r.qty,
         r.unit_price, r.vat_pct, (Number(r.unit_price) || 0) * (1 + (Number(r.vat_pct) || 0) / 100),
-        lineTotal(r), r.supplier, r.order_date || '', r.invoice_no, r.order_no,
+        lineTotal(r), r.budget, r.supplier, r.order_date || '', r.invoice_no, r.order_no,
         r.est_arrival || '', r.ref,
       ]
         .map(esc)

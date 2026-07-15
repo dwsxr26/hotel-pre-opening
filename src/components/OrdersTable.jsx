@@ -223,6 +223,14 @@ export default function OrdersTable({
         cell: ({ getValue }) => <span className="cell-pad cell-num">{formatMoney(getValue())}</span>,
       },
       {
+        accessorKey: 'budget',
+        header: 'Budget',
+        size: 120,
+        meta: { align: 'num', filter: 'none' },
+        enableColumnFilter: false,
+        cell: ({ getValue }) => <span className="cell-pad cell-num" title="Locked budget">{formatMoney(getValue())}</span>,
+      },
+      {
         accessorKey: 'supplier',
         header: 'Supplier',
         size: 150,
