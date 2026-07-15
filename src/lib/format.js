@@ -7,6 +7,13 @@ const eur = new Intl.NumberFormat('en-IE', {
   maximumFractionDigits: 0,
 })
 
+const eur2 = new Intl.NumberFormat('en-IE', {
+  style: 'currency',
+  currency: 'EUR',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
 const intFmt = new Intl.NumberFormat('en-IE')
 
 // Money: €0 (or empty) renders as "-", everything else as a whole-euro amount.
@@ -14,6 +21,13 @@ export function formatMoney(value) {
   const n = Number(value)
   if (!n) return '-'
   return eur.format(n)
+}
+
+// Money to 2 decimals: €0 (or empty) renders as "-", everything else with cents.
+export function formatMoney2(value) {
+  const n = Number(value)
+  if (!n) return '-'
+  return eur2.format(n)
 }
 
 // Plain integer with thousands separators (for counts / quantities).

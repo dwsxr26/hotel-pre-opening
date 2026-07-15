@@ -14,14 +14,22 @@ export function useViewPrefs(enabled, defaults, key = 'orders') {
     loadViewPrefs(key)
       .then((saved) => {
         if (cancelled) return
-        if (saved) setPrefs((prev) => ({ ...prev, ...saved }))
+        if (!saved) return
+        let s = saved
+        // If the column layout version moved on, drop the saved order/sizing so
+        // the user picks up the new default layout.
+        if (defaults.columnsVersion != null && saved.columnsVersion !== defaults.columnsVersion) {
+          const { columnOrder, columnSizing, ...rest } = saved // eslint-disable-line no-unused-vars
+          s = { ...rest, columnsVersion: defaults.columnsVersion }
+        }
+        setPrefs((prev) => ({ ...prev, ...s }))
       })
       .catch((err) => console.error('Failed to load view prefs', err))
       .finally(() => !cancelled && setReady(true))
     return () => {
       cancelled = true
     }
-  }, [enabled, key])
+  }, [enabled, key, defaults.columnsVersion])
 
   // Merge a partial update and schedule a debounced save.
   const update = useCallback(

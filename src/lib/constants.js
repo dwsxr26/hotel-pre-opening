@@ -37,6 +37,11 @@ export const PINNED_COLUMNS = ['package', 'item']
 // Default left-to-right column order (used on first load and "Reset columns").
 export const DEFAULT_COLUMN_ORDER = [
   'package', 'item', 'category', 'department', 'owner', 'status',
-  'qty', 'unit_price', 'vat_pct', 'unit_incl', 'total', 'budget', 'supplier', 'order_date', 'invoice_no', 'order_no',
-  'est_arrival', 'ref', 'files',
+  'qty', 'unit_price', 'vat_pct', 'unit_incl', 'total', 'budget',
+  'order_date', 'est_arrival', 'supplier', 'invoice_no', 'order_no', 'ref', 'files',
 ]
+
+// Bump when DEFAULT_COLUMN_ORDER changes: on load, any saved view with an older
+// version has its saved column order/sizing dropped so users pick up the new
+// default (they haven't started using the app, so a reset is harmless).
+export const COLUMNS_VERSION = 2

@@ -115,6 +115,9 @@ select.ctrl { appearance: none; cursor: pointer; padding-right: 26px;
 /* header internals */
 .th-inner { display: flex; align-items: center; gap: 6px; padding: 0 10px; height: 100%; cursor: pointer; }
 .th-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.th-2l { display: flex; flex-direction: column; line-height: 1.15; }
+.th-2l .th-sub { font-weight: 400; font-size: 11px; color: var(--muted-fg); }
+.cell-num .th-2l { align-items: flex-end; }
 .th-sort { color: var(--accent); display: inline-flex; flex: none; }
 .th-grip { cursor: grab; color: hsl(240 4% 70%); display: inline-flex; flex: none; }
 .th-grip:active { cursor: grabbing; }

@@ -15,7 +15,7 @@ import { DEFAULT_COLUMN_ORDER, FILTER_COLUMNS, PAGE_SIZES, PINNED_COLUMNS } from
 import { downloadCsv, itemsToCsv } from '../lib/csv'
 import BulkEditBar from './BulkEditBar'
 import MultiSelectFilter from './MultiSelectFilter'
-import { formatMoney, lineTotal } from '../lib/format'
+import { formatMoney, formatMoney2, lineTotal } from '../lib/format'
 import ConfirmModal from './ConfirmModal'
 import ConfirmEditCell from './cells/ConfirmEditCell'
 import CategoryCell from './cells/CategoryCell'
@@ -48,6 +48,14 @@ function globalFilterFn(row, _columnId, query) {
 }
 
 const DEFAULT_ORDER = DEFAULT_COLUMN_ORDER
+
+// A two-line column header: a main label with a smaller VAT qualifier beneath.
+const twoLine = (main, sub) => (
+  <span className="th-2l">
+    <span>{main}</span>
+    <span className="th-sub">{sub}</span>
+  </span>
+)
 
 export default function OrdersTable({
   items,
@@ -177,7 +185,7 @@ export default function OrdersTable({
       },
       {
         accessorKey: 'unit_price',
-        header: 'Unit price',
+        header: () => twoLine('Unit price', 'ex. VAT'),
         size: 112,
         meta: { align: 'num', filter: 'none' },
         enableColumnFilter: false,
@@ -185,10 +193,10 @@ export default function OrdersTable({
           <ConfirmEditCell
             value={getValue()}
             field="unit_price"
-            label="Unit price"
+            label="Unit price ex. VAT"
             numeric
             parse={(s) => Number(s) || 0}
-            formatValue={(v) => formatMoney(v)}
+            formatValue={(v) => formatMoney2(v)}
             editValue={(v) => (v ? String(v) : '')}
             onConfirm={(patch, meta) => requestConfirm(row.original.id, patch, meta)}
           />
@@ -196,7 +204,7 @@ export default function OrdersTable({
       },
       {
         accessorKey: 'vat_pct',
-        header: 'VAT %',
+        header: '% VAT',
         size: 72,
         meta: { align: 'num', filter: 'none' },
         enableColumnFilter: false,
@@ -206,29 +214,29 @@ export default function OrdersTable({
       },
       {
         id: 'unit_incl',
-        header: 'Unit incl. VAT',
+        header: () => twoLine('Unit price', 'incl. VAT'),
         accessorFn: (r) => (Number(r.unit_price) || 0) * (1 + (Number(r.vat_pct) || 0) / 100),
         size: 120,
         meta: { align: 'num', filter: 'none' },
         enableColumnFilter: false,
-        cell: ({ getValue }) => <span className="cell-pad cell-num">{formatMoney(getValue())}</span>,
+        cell: ({ getValue }) => <span className="cell-pad cell-num">{formatMoney2(getValue())}</span>,
       },
       {
         id: 'total',
-        header: 'Total',
+        header: () => twoLine('Total', 'ex. VAT'),
         accessorFn: (r) => lineTotal(r),
         size: 120,
         meta: { align: 'num', filter: 'none' },
         enableColumnFilter: false,
-        cell: ({ getValue }) => <span className="cell-pad cell-num">{formatMoney(getValue())}</span>,
+        cell: ({ getValue }) => <span className="cell-pad cell-num">{formatMoney2(getValue())}</span>,
       },
       {
         accessorKey: 'budget',
-        header: 'Budget',
+        header: () => twoLine('Budget', 'ex. VAT'),
         size: 120,
         meta: { align: 'num', filter: 'none' },
         enableColumnFilter: false,
-        cell: ({ getValue }) => <span className="cell-pad cell-num" title="Locked budget">{formatMoney(getValue())}</span>,
+        cell: ({ getValue }) => <span className="cell-pad cell-num" title="Locked budget">{formatMoney2(getValue())}</span>,
       },
       {
         accessorKey: 'supplier',

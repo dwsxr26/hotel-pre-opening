@@ -9,7 +9,7 @@ import { addDepartment, fetchDepartments } from './data/departments'
 import { DEPARTMENTS } from './lib/departments'
 import { ensureMyProfile, fetchProfiles, setMyPassword, updateMyProfile, setAdmin } from './data/profiles'
 import { fetchAttachments, removeLink, signedUrl, uploadFiles } from './data/attachments'
-import { DEFAULT_COLUMN_ORDER } from './lib/constants'
+import { COLUMNS_VERSION, DEFAULT_COLUMN_ORDER } from './lib/constants'
 import { displayName } from './lib/people'
 import Auth from './components/Auth'
 import Header from './components/Header'
@@ -31,6 +31,7 @@ const DEFAULT_VIEW = {
   columnFilters: [],
   columnSizing: {},
   columnOrder: DEFAULT_COLUMN_ORDER,
+  columnsVersion: COLUMNS_VERSION,
   globalFilter: '',
   pagination: { pageIndex: 0, pageSize: 50 },
   zoom: 1,
