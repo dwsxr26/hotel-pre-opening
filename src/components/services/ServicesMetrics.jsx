@@ -3,14 +3,19 @@ import { ChevronDown, Minus, Plus } from 'lucide-react'
 import { formatMoney } from '../../lib/format'
 import { aggregate } from '../../lib/serviceCalc'
 
-const cells = (r) => (
-  <>
-    <td className="num">{formatMoney(r.budget)}</td>
-    <td className="num">{formatMoney(r.spent)}</td>
-    <td className="num">{formatMoney(r.reforecast)}</td>
-    <td className="num">{formatMoney(r.remaining)}</td>
-  </>
-)
+const cells = (r) => {
+  // Light-blue fill on Reforecast showing how much is already spent.
+  const pct = r.reforecast > 0 ? Math.max(0, Math.min(1, r.spent / r.reforecast)) : 0
+  const bg = pct > 0 ? `linear-gradient(90deg, hsl(205 85% 87%) ${pct * 100}%, transparent ${pct * 100}%)` : undefined
+  return (
+    <>
+      <td className="num">{formatMoney(r.budget)}</td>
+      <td className="num">{formatMoney(r.spent)}</td>
+      <td className="num" style={bg ? { background: bg } : undefined}>{formatMoney(r.reforecast)}</td>
+      <td className="num">{formatMoney(r.remaining)}</td>
+    </>
+  )
+}
 
 function MiniTable({ label, rows, footer }) {
   return (
@@ -98,7 +103,9 @@ export default function ServicesMetrics({ lines, entriesByLine, closesByLine, it
         <button className="collapse-hd" onClick={onToggle} style={{ flex: 1 }}>
           <ChevronDown size={16} className={`collapse-chev ${open ? 'open' : ''}`} />
           <span className="card-hd" style={{ padding: 0, border: 0 }}>Metrics</span>
-          <span className="collapse-hint">{formatMoney(totals.reforecast)} reforecast · {open ? 'Hide' : 'Show'}</span>
+          <span className="collapse-hint">
+            Total {formatMoney(grand.reforecast)} · Services {formatMoney(totals.reforecast)} · OS&amp;E {formatMoney(osne.reforecast)} · {open ? 'Hide' : 'Show'}
+          </span>
         </button>
         {open && onZoom && (
           <div className="zoomer" title="Zoom the metrics" onClick={(e) => e.stopPropagation()}>
