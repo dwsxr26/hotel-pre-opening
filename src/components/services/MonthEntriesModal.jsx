@@ -3,6 +3,7 @@ import { Eye, Paperclip, Plus, Trash2, X } from 'lucide-react'
 import { formatMoney } from '../../lib/format'
 import { SERVICE_MONTHS, computeLine } from '../../lib/serviceCalc'
 import ConfirmModal from '../ConfirmModal'
+import FileDropModal from './FileDropModal'
 
 const sumEx = (arr) => arr.reduce((s, e) => s + (Number(e.amount_ex_vat) || 0), 0)
 const newKey = () => `new-${crypto.randomUUID()}`
@@ -30,7 +31,7 @@ function DraftRow({ onCommit }) {
 }
 
 // A draft entry row (controlled by the local draft; nothing hits the DB until commit).
-function EntryRow({ item, locked, onChange, onDelete, onAttach, onView }) {
+function EntryRow({ item, locked, onChange, onDelete, onAttachClick, onView }) {
   const total = (Number(item.amount_ex_vat) || 0) * (1 + (Number(item.vat_pct) || 0) / 100)
   return (
     <div className="me-row">
@@ -41,12 +42,9 @@ function EntryRow({ item, locked, onChange, onDelete, onAttach, onView }) {
       {item.type === 'invoice' && item.file_path ? (
         <button className="me-file" title={`View ${item.file_name}`} onClick={() => onView(item.file_path)}><Eye size={14} /></button>
       ) : item.type === 'invoice' && item._file ? (
-        <span className="me-file" title={`${item.file_name} (uploads on save)`}><Paperclip size={13} /></span>
+        <button className="me-file has-file" title={`${item.file_name} (uploads on save) — click to replace`} onClick={onAttachClick}><Paperclip size={13} /></button>
       ) : item.type === 'invoice' && !locked ? (
-        <label className="me-file" title="Attach evidence">
-          <Paperclip size={13} />
-          <input type="file" hidden onChange={(e) => { const f = e.target.files[0]; e.target.value = ''; if (f) onAttach(f) }} />
-        </label>
+        <button className="me-file me-file-need" title="Attach evidence" onClick={onAttachClick}><Paperclip size={13} /></button>
       ) : (
         <span className="me-file" />
       )}
@@ -67,6 +65,7 @@ export default function MonthEntriesModal({
   const [pendingDelete, setPendingDelete] = useState(null)
   const [showApproval, setShowApproval] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [attachKey, setAttachKey] = useState(null)
 
   const forecast = draft.filter((e) => e.type === 'forecast')
   const invoices = draft.filter((e) => e.type === 'invoice')
@@ -89,6 +88,8 @@ export default function MonthEntriesModal({
     .filter((x) => x.f > 0)
   const futureTotal = futureForecast.reduce((s, x) => s + x.f, 0)
   const canRebalance = futureForecast.length > 0 && overBudget <= futureTotal + 0.5
+  // Every invoice must have evidence (an existing file or a pending upload) before saving.
+  const missingEvidence = invoices.some((e) => !e.file_path && !e._file)
 
   // --- draft mutators ---
   const change = (key, field, val) => setDraft((d) => d.map((x) => (x._key ?? x.id) === key ? { ...x, [field]: val } : x))
@@ -131,6 +132,7 @@ export default function MonthEntriesModal({
   }
 
   const doClosePlan = () => {
+    if (missingEvidence) return
     if (overBudget > 0.5) {
       if (!canRebalance) return
       if (choice === 'reduce-next') {
@@ -170,7 +172,7 @@ export default function MonthEntriesModal({
             key={key} item={e} locked={locked}
             onChange={(f, v) => change(key, f, v)}
             onDelete={() => setPendingDelete(e)}
-            onAttach={(file) => attachRow(key, file)}
+            onAttachClick={() => setAttachKey(key)}
             onView={onDownload}
           />
         )
@@ -209,59 +211,66 @@ export default function MonthEntriesModal({
               <button className="btn btn-primary" onClick={onClose}>Done</button>
               <button className="btn" disabled={saving} onClick={onReopen}>Edit</button>
             </div>
-          ) : overBudget > 0.5 ? (
+          ) : (
             <>
-              <div className="me-warn">Reforecast {formatMoney(reforecastNow)} is {formatMoney(overBudget)} over budget ({formatMoney(budget)}).</div>
-              {canRebalance ? (
+              {missingEvidence && (
+                <div className="me-warn">Attach evidence to every invoice before you can save.</div>
+              )}
+              {overBudget > 0.5 ? (
                 <>
-                  <div className="me-status">Choose an option to rebalance before saving:</div>
-                  <div className="me-close-actions">
-                    <div className="seg">
-                      {seg('reduce-next', `Reduce ${futureForecast[0].label}`)}
-                      {seg('reduce-prorata', 'Reduce future pro-rata')}
+                  <div className="me-warn">Reforecast {formatMoney(reforecastNow)} is {formatMoney(overBudget)} over budget ({formatMoney(budget)}).</div>
+                  {canRebalance ? (
+                    <>
+                      <div className="me-status">Choose an option to rebalance before saving:</div>
+                      <div className="me-close-actions">
+                        <div className="seg">
+                          {seg('reduce-next', `Reduce ${futureForecast[0].label}`)}
+                          {seg('reduce-prorata', 'Reduce future pro-rata')}
+                        </div>
+                        <div className="spacer" />
+                        <button className="btn" disabled={saving} onClick={onClose}>Cancel</button>
+                        <button className="btn btn-primary" disabled={!choice || saving || missingEvidence} onClick={doClosePlan}>Save</button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="me-close-actions">
+                      <div className="me-status" style={{ flex: 1, marginBottom: 0 }}>No future forecast to rebalance against — true overspend.</div>
+                      <button className="btn" disabled={saving} onClick={onClose}>Cancel</button>
+                      <button className="btn btn-danger" onClick={() => setShowApproval(true)}>Request manager approval</button>
                     </div>
+                  )}
+                </>
+              ) : !closing ? (
+                <>
+                  <div className="me-status">{statusLine}</div>
+                  <div className="me-close-actions">
+                    <button className="btn btn-primary" disabled={saving || missingEvidence} onClick={() => { setClosing(true); setChoice(null) }}>Month End Closed?</button>
                     <div className="spacer" />
                     <button className="btn" disabled={saving} onClick={onClose}>Cancel</button>
-                    <button className="btn btn-primary" disabled={!choice || saving} onClick={doClosePlan}>Save</button>
+                    <button className="btn" disabled={saving || missingEvidence} onClick={() => commit(null)}>Save &amp; close</button>
+                  </div>
+                </>
+              ) : unused > 0.5 ? (
+                <>
+                  <div className="me-status">Unused {formatMoney(unused)} — choose an option before saving:</div>
+                  <div className="me-close-actions">
+                    <div className="seg">
+                      {seg('cancel', 'Cancel unused')}
+                      {nextMonth && seg('roll', `Roll forward to ${nextMonth.label}`)}
+                    </div>
+                    <div className="spacer" />
+                    <button className="btn" disabled={saving} onClick={() => setClosing(false)}>Back</button>
+                    <button className="btn btn-primary" disabled={!choice || saving || missingEvidence} onClick={doClosePlan}>Save</button>
                   </div>
                 </>
               ) : (
                 <div className="me-close-actions">
-                  <div className="me-status" style={{ flex: 1, marginBottom: 0 }}>No future forecast to rebalance against — true overspend.</div>
-                  <button className="btn" disabled={saving} onClick={onClose}>Cancel</button>
-                  <button className="btn btn-danger" onClick={() => setShowApproval(true)}>Request manager approval</button>
+                  <div className="me-status" style={{ flex: 1, marginBottom: 0 }}>Invoiced matches forecast — ready to close.</div>
+                  <button className="btn" disabled={saving} onClick={() => setClosing(false)}>Back</button>
+                  <button className="btn btn-primary" disabled={saving || missingEvidence} onClick={doClosePlan}>Save</button>
                 </div>
               )}
             </>
-          ) : !closing ? (
-            <>
-              <div className="me-status">{statusLine}</div>
-              <div className="me-close-actions">
-                <button className="btn btn-primary" disabled={saving} onClick={() => { setClosing(true); setChoice(null) }}>Month End Closed?</button>
-                <div className="spacer" />
-                <button className="btn" disabled={saving} onClick={onClose}>Cancel</button>
-                <button className="btn" disabled={saving} onClick={() => commit(null)}>Save &amp; close</button>
-              </div>
-            </>
-          ) : unused > 0.5 ? (
-            <>
-              <div className="me-status">Unused {formatMoney(unused)} — choose an option before saving:</div>
-              <div className="me-close-actions">
-                <div className="seg">
-                  {seg('cancel', 'Cancel unused')}
-                  {nextMonth && seg('roll', `Roll forward to ${nextMonth.label}`)}
-                </div>
-                <div className="spacer" />
-                <button className="btn" disabled={saving} onClick={() => setClosing(false)}>Back</button>
-                <button className="btn btn-primary" disabled={!choice || saving} onClick={doClosePlan}>Save</button>
-              </div>
-            </>
-          ) : (
-            <div className="me-close-actions">
-              <div className="me-status" style={{ flex: 1, marginBottom: 0 }}>Invoiced matches forecast — ready to close.</div>
-              <button className="btn" disabled={saving} onClick={() => setClosing(false)}>Back</button>
-              <button className="btn btn-primary" disabled={saving} onClick={doClosePlan}>Save</button>
-            </div>
           )}
         </div>
       </div>
@@ -284,6 +293,12 @@ export default function MonthEntriesModal({
           confirmLabel="OK"
           onCancel={() => setShowApproval(false)}
           onConfirm={() => setShowApproval(false)}
+        />
+      )}
+      {attachKey != null && (
+        <FileDropModal
+          onSelect={(file) => { attachRow(attachKey, file); setAttachKey(null) }}
+          onClose={() => setAttachKey(null)}
         />
       )}
     </div>
