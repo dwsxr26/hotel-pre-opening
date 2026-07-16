@@ -254,7 +254,7 @@ export default function OrdersTable({
         meta: { align: 'num', filter: 'none' },
         enableColumnFilter: false,
         cell: ({ getValue }) => {
-          const v = getValue()
+          const v = Math.round(getValue() * 100) / 100
           return <span className="cell-pad cell-num" title="Total ex. VAT − Budget ex. VAT">{formatMoney2(v)}</span>
         },
       },
@@ -548,7 +548,7 @@ export default function OrdersTable({
       t.total += lineTotal(r)
       t.budget += Number(r.budget) || 0
     }
-    t.vs_budget = t.total - t.budget
+    t.vs_budget = Math.round((t.total - t.budget) * 100) / 100
     return t
   }, [rowsData])
   const pageCount = table.getPageCount()
