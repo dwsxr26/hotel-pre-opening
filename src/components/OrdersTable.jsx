@@ -50,8 +50,12 @@ function globalFilterFn(row, _columnId, query) {
 const DEFAULT_ORDER = DEFAULT_COLUMN_ORDER
 
 // Over/under-budget shading for the "vs. Bud." column: positive (over budget)
-// shows red, negative (under) shows green.
-const vsClass = (v) => (v > 0 ? 'vs-over' : v < 0 ? 'vs-under' : '')
+// shows red, negative (under) shows green. Compare on the value rounded to
+// cents so floating-point dust (e.g. 5000 × 0.07) doesn't flag a €0.00 line.
+const vsClass = (v) => {
+  const c = Math.round(v * 100) / 100
+  return c > 0 ? 'vs-over' : c < 0 ? 'vs-under' : ''
+}
 
 // A two-line column header: a main label with a smaller VAT qualifier beneath.
 const twoLine = (main, sub) => (
