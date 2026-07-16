@@ -49,6 +49,10 @@ function globalFilterFn(row, _columnId, query) {
 
 const DEFAULT_ORDER = DEFAULT_COLUMN_ORDER
 
+// Over/under-budget shading for the "vs. Bud." column: positive (over budget)
+// shows red, negative (under) shows green.
+const vsClass = (v) => (v > 0 ? 'vs-over' : v < 0 ? 'vs-under' : '')
+
 // A two-line column header: a main label with a smaller VAT qualifier beneath.
 const twoLine = (main, sub) => (
   <span className="th-2l">
@@ -237,6 +241,18 @@ export default function OrdersTable({
         meta: { align: 'num', filter: 'none' },
         enableColumnFilter: false,
         cell: ({ getValue }) => <span className="cell-pad cell-num" title="Locked budget">{formatMoney2(getValue())}</span>,
+      },
+      {
+        id: 'vs_budget',
+        header: 'vs. Bud.',
+        accessorFn: (r) => lineTotal(r) - (Number(r.budget) || 0),
+        size: 110,
+        meta: { align: 'num', filter: 'none' },
+        enableColumnFilter: false,
+        cell: ({ getValue }) => {
+          const v = getValue()
+          return <span className="cell-pad cell-num" title="Total ex. VAT − Budget ex. VAT">{formatMoney2(v)}</span>
+        },
       },
       {
         accessorKey: 'supplier',
@@ -499,10 +515,11 @@ export default function OrdersTable({
                 ((col.id === 'invoice_no' && !row.original.invoice_no) ||
                   (col.id === 'order_no' && !row.original.order_no) ||
                   (col.id === 'files' && !(files && files.length)))
+              const vs = col.id === 'vs_budget' ? vsClass(cell.getValue()) : ''
               return (
                 <td
                   key={cell.id}
-                  className={`${pinClass(col)} ${meta.align === 'num' ? 'cell-num' : ''} ${req ? 'cell-required' : ''}`}
+                  className={`${pinClass(col)} ${meta.align === 'num' ? 'cell-num' : ''} ${req ? 'cell-required' : ''} ${vs}`}
                 >
                   {flexRender(col.columnDef.cell, cell.getContext())}
                 </td>
@@ -527,6 +544,7 @@ export default function OrdersTable({
       t.total += lineTotal(r)
       t.budget += Number(r.budget) || 0
     }
+    t.vs_budget = t.total - t.budget
     return t
   }, [rowsData])
   const pageCount = table.getPageCount()
@@ -706,8 +724,9 @@ export default function OrdersTable({
                 {leafCols.map((col) => {
                   const isCur = Object.prototype.hasOwnProperty.call(colTotals, col.id)
                   const isNum = (col.columnDef.meta || {}).align === 'num'
+                  const vs = col.id === 'vs_budget' ? vsClass(colTotals.vs_budget) : ''
                   return (
-                    <td key={col.id} className={`${pinClass(col)} ${isNum ? 'cell-num' : ''}`}>
+                    <td key={col.id} className={`${pinClass(col)} ${isNum ? 'cell-num' : ''} ${vs}`}>
                       {isCur ? (
                         <span className="cell-pad cell-num">{formatMoney2(colTotals[col.id])}</span>
                       ) : col.id === 'package' ? (
