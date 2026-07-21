@@ -8,6 +8,7 @@ import { addCategory, fetchCategories } from './data/categories'
 import { addDepartment, fetchDepartments } from './data/departments'
 import { DEPARTMENTS } from './lib/departments'
 import { ensureMyProfile, fetchProfiles, setMyPassword, updateMyProfile, setAdmin } from './data/profiles'
+import { addAllowedMember, fetchAllowedMembers, removeAllowedMember } from './data/members'
 import { fetchAttachments, removeLink, signedUrl, uploadFiles } from './data/attachments'
 import { COLUMNS_VERSION, DEFAULT_COLUMN_ORDER } from './lib/constants'
 import { displayName } from './lib/people'
@@ -57,6 +58,7 @@ export default function App() {
   const [showProfile, setShowProfile] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
   const [showTeam, setShowTeam] = useState(false)
+  const [allowedMembers, setAllowedMembers] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
   const [tab, setTabState] = useState(() => localStorage.getItem('florence.tab') || 'orders')
   const setTab = useCallback((t) => {
@@ -71,13 +73,18 @@ export default function App() {
     if (!user) return
     let active = true
     const load = () =>
-      Promise.all([fetchItems(), fetchCategories(), fetchProfiles(), fetchAttachments(), fetchDepartments()])
-        .then(([its, cats, profs, atts, depts]) => {
+      Promise.all([
+        fetchItems(), fetchCategories(), fetchProfiles(), fetchAttachments(), fetchDepartments(),
+        // The allowlist only exists once migration 0013 has been run.
+        fetchAllowedMembers().catch(() => []),
+      ])
+        .then(([its, cats, profs, atts, depts, allowed]) => {
           if (!active) return
           setItems(its)
           setCategories(cats.map((c) => c.name))
           setProfiles(profs)
           setAttachments(atts)
+          setAllowedMembers(allowed)
           if (depts.length) setDepartments(depts.map((d) => d.name))
         })
         .catch((err) => console.error('Load failed', err))
@@ -419,6 +426,23 @@ export default function App() {
     }
   }, [])
 
+  // Admin-managed invite allowlist: only these emails can create an account.
+  const onAddMember = useCallback(async (email) => {
+    const created = await addAllowedMember(email)
+    if (created) setAllowedMembers((cur) => [...cur, created].sort((a, b) => a.email.localeCompare(b.email)))
+    return created
+  }, [])
+
+  const onRemoveMember = useCallback(async (email) => {
+    try {
+      await removeAllowedMember(email)
+      setAllowedMembers((cur) => cur.filter((m) => m.email !== email))
+    } catch (e) {
+      console.error('Remove member failed', e)
+      alert('Could not remove that email (admins only).')
+    }
+  }, [])
+
   const onSaveProfile = useCallback(async ({ first_name, last_name, password }) => {
     let saved = await updateMyProfile({ first_name, last_name })
     if (password) saved = await setMyPassword(password)
@@ -538,7 +562,11 @@ export default function App() {
         <TeamModal
           profiles={profiles}
           myUserId={user.id}
+          isAdmin={!!myProfile?.is_admin}
+          allowedMembers={allowedMembers}
           onSetAdmin={onSetAdmin}
+          onAddMember={onAddMember}
+          onRemoveMember={onRemoveMember}
           onClose={() => setShowTeam(false)}
         />
       )}

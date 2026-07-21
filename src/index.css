@@ -335,6 +335,8 @@ input.cell-input.cell-num { text-align: right; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
 .invite-row { display: flex; gap: 8px; }
 .invite-row input { flex: 1; }
+.invite-done { margin-top: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: hsl(140 45% 97%); font-size: 13px; }
+.invite-msg { margin: 8px 0; padding: 8px; background: #fff; border: 1px solid var(--border); border-radius: 6px; font: inherit; font-size: 12px; white-space: pre-wrap; color: var(--muted-fg); }
 a.btn { text-decoration: none; }
 
 /* -------------------------------------------------------------------- auth */
