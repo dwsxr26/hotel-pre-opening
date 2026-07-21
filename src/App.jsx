@@ -17,7 +17,6 @@ import Header from './components/Header'
 import Metrics from './components/Metrics'
 import OrdersTable from './components/OrdersTable'
 import ProfileModal from './components/ProfileModal'
-import InviteModal from './components/InviteModal'
 import ServicesTab from './components/services/ServicesTab'
 import TeamModal from './components/TeamModal'
 import {
@@ -56,7 +55,6 @@ export default function App() {
   const [profiles, setProfiles] = useState([])
   const [myProfile, setMyProfile] = useState(null)
   const [showProfile, setShowProfile] = useState(false)
-  const [showInvite, setShowInvite] = useState(false)
   const [showTeam, setShowTeam] = useState(false)
   const [allowedMembers, setAllowedMembers] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
@@ -466,7 +464,6 @@ export default function App() {
         profile={myProfile}
         isAdmin={!!myProfile?.is_admin}
         onEditName={() => setShowProfile(true)}
-        onInvite={() => setShowInvite(true)}
         onTeam={() => setShowTeam(true)}
       />
       {tab === 'orders' && (
@@ -557,7 +554,6 @@ export default function App() {
           onClose={() => setShowProfile(false)}
         />
       )}
-      {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
       {showTeam && (
         <TeamModal
           profiles={profiles}
