@@ -28,17 +28,25 @@ export default function ServicesTab({
   const filters = useMemo(() => view.svcFilters || {}, [view.svcFilters])
   const sort = useMemo(() => view.svcSort || { key: '', dir: 'asc' }, [view.svcSort])
 
-  // Compute figures for every line once.
+  // Individual HR lines are hidden from the detail grid for non-admins. Their
+  // figures still flow into the Metrics consolidation (which gets the full
+  // `lines` set), so everyone sees the HR totals — just not the line detail.
+  const visibleLines = useMemo(
+    () => (isAdmin ? lines : lines.filter((l) => (l.department || '').trim().toLowerCase() !== 'hr')),
+    [lines, isAdmin],
+  )
+
+  // Compute figures for every visible line once.
   const rowsAll = useMemo(
-    () => lines.map((line) => ({ line, c: computeLine(line, entriesByLine[line.id], closesByLine[line.id], incl) })),
-    [lines, entriesByLine, closesByLine, incl],
+    () => visibleLines.map((line) => ({ line, c: computeLine(line, entriesByLine[line.id], closesByLine[line.id], incl) })),
+    [visibleLines, entriesByLine, closesByLine, incl],
   )
 
   const options = useMemo(() => ({
-    line: [...new Set(lines.map((l) => l.name))].sort((a, b) => a.localeCompare(b)),
-    department: [...new Set(lines.map((l) => l.department))].sort((a, b) => a.localeCompare(b)),
-    owner: [...new Set(lines.map((l) => l.owner || ''))].sort((a, b) => a.localeCompare(b)),
-  }), [lines])
+    line: [...new Set(visibleLines.map((l) => l.name))].sort((a, b) => a.localeCompare(b)),
+    department: [...new Set(visibleLines.map((l) => l.department))].sort((a, b) => a.localeCompare(b)),
+    owner: [...new Set(visibleLines.map((l) => l.owner || ''))].sort((a, b) => a.localeCompare(b)),
+  }), [visibleLines])
 
   const rows = useMemo(() => {
     let out = rowsAll.filter((r) => {
@@ -151,7 +159,7 @@ export default function ServicesTab({
         {anyFilter && (
           <button className="linkbtn" onClick={() => setView({ svcFilters: {} })}>Clear filters</button>
         )}
-        <span className="row-count">{rows.length} of {lines.length} lines</span>
+        <span className="row-count">{rows.length} of {visibleLines.length} lines</span>
       </div>
 
       <ServicesTable
