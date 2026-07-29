@@ -20,6 +20,10 @@ evidence/
 .env.local
 .env.*.local
 
+# Source spreadsheets — app is seeded from supabase/seed/*, not these
+*.xlsx
+*.xls
+
 # MCP config and Claude settings (contain secrets)
 .mcp.json
 .claude/
