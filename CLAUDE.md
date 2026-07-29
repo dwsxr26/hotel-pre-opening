@@ -89,12 +89,13 @@ stack, optimistic edits, realtime refresh).
 
 ### Data model (Supabase)
 
-Migrations live in `supabase/migrations/`, numbered `0001…0013`, applied in
+Migrations live in `supabase/migrations/`, numbered `0001…0014`, applied in
 order via the Supabase SQL editor. Key tables: `items`, `categories`,
 `departments`, `view_prefs`, `profiles`, `allowed_members` (invite allowlist),
-`attachments`, `service_lines`, `service_entries`, `service_closes`. RLS is on
-everywhere. Admin-only writes are enforced in SQL (client shows an alert on the
-resulting error — never trust the client for authz).
+`attachments`, `service_lines`, `service_entries`, `service_month_close`,
+`service_export_runs` (per-user payment-run log). RLS is on everywhere.
+Admin-only writes are enforced in SQL (client shows an alert on the resulting
+error — never trust the client for authz).
 
 ## Conventions & gotchas
 
@@ -114,6 +115,14 @@ resulting error — never trust the client for authz).
 - **Money**: forecast/budget stored **ex-VAT**; default VAT 22%. Prefer
   `Math.round` to cents to avoid floating-point `€0.00` showing as non-zero
   (see recent commits on this).
+- **Payment run**: service invoices carry a `pay_status` (`to_be_paid` /
+  `paid_by_card` / `paid_by_bank`; only `to_be_paid` is exported, so ticking an
+  invoice paid drops it from the next run). The Overview toolbar's "Payment run"
+  button
+  ([PaymentRunModal](src/components/services/PaymentRunModal.jsx) →
+  [paymentRun.js](src/data/paymentRun.js)) zips a summary CSV + evidence files
+  for all `to_be_paid` invoices, or only those added since the current user's
+  last export (tracked in `service_export_runs`). Uses `fflate` for zipping.
 - **Windows / PowerShell** is the primary shell here; a Bash tool is also
   available for POSIX scripts.
 

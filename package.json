@@ -17,6 +17,7 @@
     "@supabase/supabase-js": "^2.108.1",
     "@tanstack/react-table": "^8.21.2",
     "@tanstack/react-virtual": "^3.13.0",
+    "fflate": "^0.8.3",
     "lucide-react": "^1.17.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"

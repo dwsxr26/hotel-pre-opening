@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Download, Minus, Plus } from 'lucide-react'
+import { Download, FileDown, Minus, Plus } from 'lucide-react'
 import { useViewPrefs } from '../../hooks/useViewPrefs'
 import { SERVICE_MONTHS, computeLine } from '../../lib/serviceCalc'
 import { rowsToCsv, downloadCsv } from '../../lib/csv'
@@ -7,6 +7,7 @@ import MultiSelectFilter from '../MultiSelectFilter'
 import ServicesMetrics from './ServicesMetrics'
 import ServicesTable from './ServicesTable'
 import MonthEntriesModal from './MonthEntriesModal'
+import PaymentRunModal from './PaymentRunModal'
 
 const DEFAULT_SERVICES_VIEW = {
   svcWidths: {}, svcOrder: [], inclVat: false, metricsOpen: false, zoom: 1,
@@ -20,6 +21,7 @@ export default function ServicesTab({
 }) {
   const { prefs: view, update: setView } = useViewPrefs(true, DEFAULT_SERVICES_VIEW, 'services')
   const [open, setOpen] = useState(null) // { lineId, month }
+  const [showPaymentRun, setShowPaymentRun] = useState(false)
   const incl = view.inclVat === true
   const zoom = view.zoom || 1
   const setZoom = (z) => setView({ zoom: Math.min(1.5, Math.max(0.6, Math.round(z * 10) / 10)) })
@@ -137,6 +139,9 @@ export default function ServicesTab({
           <button className={`seg-btn ${incl ? 'on' : ''}`} onClick={() => setView({ inclVat: true })}>Incl. VAT</button>
         </div>
         <div className="spacer" />
+        <button className="btn" onClick={() => setShowPaymentRun(true)} title="Export invoices to be paid (summary + evidence files) as a zip for the payment run">
+          <FileDown size={14} /> Payment run
+        </button>
         <button className="btn" onClick={exportCsv} title="Export the current view to CSV">
           <Download size={14} /> Export CSV
         </button>
@@ -190,6 +195,14 @@ export default function ServicesTab({
           onDownload={onDownload}
           onReopen={() => onReopen(open.lineId, open.month)}
           onClose={() => setOpen(null)}
+        />
+      )}
+
+      {showPaymentRun && (
+        <PaymentRunModal
+          lines={visibleLines}
+          entriesByLine={entriesByLine}
+          onClose={() => setShowPaymentRun(false)}
         />
       )}
     </section>

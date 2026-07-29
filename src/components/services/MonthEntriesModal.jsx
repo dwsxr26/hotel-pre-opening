@@ -8,21 +8,35 @@ import FileDropModal from './FileDropModal'
 const sumEx = (arr) => arr.reduce((s, e) => s + (Number(e.amount_ex_vat) || 0), 0)
 const newKey = () => `new-${crypto.randomUUID()}`
 
+// Payment-status dropdown for invoice rows (nothing for forecast rows).
+function PayCell({ type, value, disabled, onChange }) {
+  if (type !== 'invoice') return <span className="me-pay" />
+  return (
+    <select className="me-pay" value={value || 'to_be_paid'} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
+      <option value="to_be_paid">To be paid</option>
+      <option value="paid_by_card">Paid by card</option>
+      <option value="paid_by_bank">Paid by bank</option>
+    </select>
+  )
+}
+
 // Blank starter row shown when a section is empty (commits to the draft on amount blur).
-function DraftRow({ onCommit }) {
+function DraftRow({ type, onCommit }) {
   const [title, setTitle] = useState('')
+  const [pay, setPay] = useState('to_be_paid')
   const [amount, setAmount] = useState('')
   const [vat, setVat] = useState(22)
   const total = (Number(amount) || 0) * (1 + (Number(vat) || 0) / 100)
   const maybeCommit = () => {
     const a = Number(amount) || 0
     if (!title.trim() && a === 0) return
-    onCommit({ title: title.trim(), amount_ex_vat: a, vat_pct: Number(vat) || 0 })
-    setTitle(''); setAmount(''); setVat(22)
+    onCommit({ title: title.trim(), pay_status: pay, amount_ex_vat: a, vat_pct: Number(vat) || 0 })
+    setTitle(''); setPay('to_be_paid'); setAmount(''); setVat(22)
   }
   return (
     <div className="me-row">
       <input className="me-title" value={title} placeholder="Description" onChange={(e) => setTitle(e.target.value)} />
+      <PayCell type={type} value={pay} onChange={setPay} />
       <input className="me-num" type="number" step="any" value={amount} placeholder="0" onChange={(e) => setAmount(e.target.value)} onBlur={maybeCommit} />
       <input className="me-vat" type="number" step="any" value={vat} onChange={(e) => setVat(e.target.value)} onBlur={maybeCommit} />
       <span className="me-total">{formatMoney(total)}</span><span className="me-file" /><span className="me-x" />
@@ -36,6 +50,7 @@ function EntryRow({ item, locked, onChange, onDelete, onAttachClick, onView }) {
   return (
     <div className="me-row">
       <input className="me-title" value={item.title} disabled={locked} placeholder="Description" onChange={(e) => onChange('title', e.target.value)} />
+      <PayCell type={item.type} value={item.pay_status} disabled={locked} onChange={(v) => onChange('pay_status', v)} />
       <input className="me-num" type="number" step="any" value={item.amount_ex_vat} disabled={locked} onChange={(e) => onChange('amount_ex_vat', e.target.value)} />
       <input className="me-vat" type="number" step="any" value={item.vat_pct} disabled={locked} onChange={(e) => onChange('vat_pct', e.target.value)} />
       <span className="me-total">{formatMoney(total)}</span>
@@ -93,7 +108,7 @@ export default function MonthEntriesModal({
 
   // --- draft mutators ---
   const change = (key, field, val) => setDraft((d) => d.map((x) => (x._key ?? x.id) === key ? { ...x, [field]: val } : x))
-  const addRow = (type, extra = {}) => setDraft((d) => [...d, { _key: newKey(), id: null, type, title: '', amount_ex_vat: 0, vat_pct: 22, file_path: null, file_name: null, ...extra }])
+  const addRow = (type, extra = {}) => setDraft((d) => [...d, { _key: newKey(), id: null, type, title: '', pay_status: type === 'invoice' ? 'to_be_paid' : null, amount_ex_vat: 0, vat_pct: 22, file_path: null, file_name: null, ...extra }])
   const removeRow = (key) => setDraft((d) => d.filter((x) => (x._key ?? x.id) !== key))
   const attachRow = (key, file) => setDraft((d) => d.map((x) => (x._key ?? x.id) === key ? { ...x, _file: file, file_name: file.name } : x))
 
@@ -112,9 +127,10 @@ export default function MonthEntriesModal({
         if ((d.title || '') !== (o.title || '')) patch.title = d.title || ''
         if ((Number(d.amount_ex_vat) || 0) !== (Number(o.amount_ex_vat) || 0)) patch.amount_ex_vat = Number(d.amount_ex_vat) || 0
         if ((Number(d.vat_pct) || 0) !== (Number(o.vat_pct) || 0)) patch.vat_pct = Number(d.vat_pct) || 0
+        if (d.type === 'invoice' && (d.pay_status || 'to_be_paid') !== (o.pay_status || 'to_be_paid')) patch.pay_status = d.pay_status || 'to_be_paid'
         if (d._file || Object.keys(patch).length) updates.push({ id: d.id, patch, _file: d._file })
       } else {
-        adds.push({ type: d.type, title: d.title || '', amount_ex_vat: Number(d.amount_ex_vat) || 0, vat_pct: Number(d.vat_pct) || 0, _file: d._file })
+        adds.push({ type: d.type, title: d.title || '', pay_status: d.pay_status, amount_ex_vat: Number(d.amount_ex_vat) || 0, vat_pct: Number(d.vat_pct) || 0, _file: d._file })
       }
     }
     for (const o of entries) if (!seen.has(o.id)) deletes.push({ id: o.id, file_path: o.file_path })
@@ -160,10 +176,11 @@ export default function MonthEntriesModal({
     <div className="me-section">
       <div className="me-section-hd"><span>{title}</span></div>
       <div className="me-head">
-        <span>Description</span><span className="me-num">Ex VAT</span><span className="me-vat">VAT %</span>
+        <span>Description</span><span className="me-pay">{type === 'invoice' ? 'Payment' : ''}</span>
+        <span className="me-num">Ex VAT</span><span className="me-vat">VAT %</span>
         <span className="me-total">Total</span><span className="me-file" /><span className="me-x" />
       </div>
-      {rows.length === 0 && !locked && <DraftRow onCommit={(vals) => addRow(type, vals)} />}
+      {rows.length === 0 && !locked && <DraftRow type={type} onCommit={(vals) => addRow(type, vals)} />}
       {rows.length === 0 && locked && <div className="me-empty">None</div>}
       {rows.map((e) => {
         const key = e._key ?? e.id

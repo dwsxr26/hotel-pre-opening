@@ -1,7 +1,7 @@
 import { supabase } from '../supabase'
 
 const BUCKET = 'attachments'
-const ENTRY_COLS = 'id, line_id, month, type, title, amount_ex_vat, vat_pct, file_path, file_name, auto_from'
+const ENTRY_COLS = 'id, line_id, month, type, title, amount_ex_vat, vat_pct, pay_status, file_path, file_name, auto_from'
 
 export async function fetchServiceLines() {
   const { data, error } = await supabase
@@ -16,7 +16,7 @@ export async function fetchServiceLines() {
 export async function fetchServiceEntries() {
   const { data, error } = await supabase
     .from('service_entries')
-    .select('id, line_id, month, type, title, amount_ex_vat, vat_pct, file_path, file_name')
+    .select('id, line_id, month, type, title, amount_ex_vat, vat_pct, pay_status, file_path, file_name, created_at')
   if (error) throw error
   const map = {}
   for (const e of data ?? []) (map[e.line_id] ||= []).push(e)
@@ -75,6 +75,34 @@ export async function serviceSignedUrl(path) {
   const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 120)
   if (error) throw error
   return data.signedUrl
+}
+
+// Download an evidence file's raw bytes (for bundling into the payment-run zip).
+export async function downloadServiceFileBytes(path) {
+  const { data, error } = await supabase.storage.from(BUCKET).download(path)
+  if (error) throw error
+  return new Uint8Array(await data.arrayBuffer())
+}
+
+// --- payment-run export log ("last download" per user) ---------------------
+// The most recent export timestamp for the current user (RLS scopes to them),
+// or null if they've never exported. Drives the "only new since…" option.
+export async function fetchLastExportRun() {
+  const { data, error } = await supabase
+    .from('service_export_runs')
+    .select('created_at')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) throw error
+  return data?.created_at || null
+}
+
+// Record that the current user just exported a payment run (user_id defaults to
+// auth.uid() in the DB). mode is 'all' or 'new'.
+export async function recordExportRun(mode, count) {
+  const { error } = await supabase.from('service_export_runs').insert({ mode, count })
+  if (error) throw error
 }
 
 // --- month close (cancel / roll forward) -----------------------------------

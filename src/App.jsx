@@ -174,6 +174,7 @@ export default function App() {
           await addServiceEntry({
             line_id: lineId, month, type: a.type, title: a.title || '',
             amount_ex_vat: Number(a.amount_ex_vat) || 0, vat_pct: Number(a.vat_pct) || 0, file_path, file_name,
+            ...(a.type === 'invoice' ? { pay_status: a.pay_status || 'to_be_paid' } : {}),
           })
         }
         for (const u of ops.updates || []) {
