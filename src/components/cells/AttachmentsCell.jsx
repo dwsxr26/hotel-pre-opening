@@ -22,7 +22,7 @@ export default function AttachmentsCell({ itemId, files = [], onUpload, onRemove
           title="Attachments"
           subtitle="Invoices, order-confirmation emails, etc. for this line item."
           files={files}
-          onUpload={(list) => onUpload(itemId, list)}
+          onUpload={(list) => onUpload([itemId], list)}
           onRemove={(attId) => onRemove(itemId, attId)}
           onDownload={onDownload}
           onClose={() => setOpen(false)}

@@ -29,6 +29,8 @@ export async function fetchAttachments() {
 // Upload each file to Storage, create its metadata row, and link it to every
 // given item id (many-to-many).
 export async function uploadFiles(files, itemIds) {
+  // Tolerate a single id or an array (single-cell vs bulk callers).
+  const ids = (Array.isArray(itemIds) ? itemIds : [itemIds]).filter(Boolean)
   const { data: userData } = await supabase.auth.getUser()
   const uid = userData.user?.id
   for (const file of files) {
@@ -43,7 +45,7 @@ export async function uploadFiles(files, itemIds) {
       .select('id')
       .single()
     if (error) throw error
-    const links = itemIds.map((id) => ({ item_id: id, attachment_id: att.id }))
+    const links = ids.map((id) => ({ item_id: id, attachment_id: att.id }))
     if (links.length) {
       const { error: linkErr } = await supabase.from('item_attachments').insert(links)
       if (linkErr) throw linkErr
