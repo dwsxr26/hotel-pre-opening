@@ -2,6 +2,16 @@ import { supabase } from '../supabase'
 
 const BUCKET = 'attachments'
 
+// A storage-safe object key: decompose accents, drop anything but word chars,
+// dot and hyphen, and collapse spaces to underscores. Keeps the extension.
+export function safeName(name) {
+  const safe = String(name || '')
+    .normalize('NFKD')
+    .replace(/[^\w.\- ]+/g, '')
+    .replace(/\s+/g, '_')
+  return safe || 'file'
+}
+
 // Returns a map of item_id -> [{ id, filename, path, content_type }].
 export async function fetchAttachments() {
   const { data, error } = await supabase
@@ -22,7 +32,9 @@ export async function uploadFiles(files, itemIds) {
   const { data: userData } = await supabase.auth.getUser()
   const uid = userData.user?.id
   for (const file of files) {
-    const path = `${crypto.randomUUID()}-${file.name}`
+    // Storage rejects keys with accents/symbols (e.g. "Fattura n° 123 (€).pdf"),
+    // so the key uses a sanitized name; the real filename stays in the DB row.
+    const path = `${crypto.randomUUID()}-${safeName(file.name)}`
     const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false })
     if (upErr) throw upErr
     const { data: att, error } = await supabase

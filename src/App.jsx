@@ -344,7 +344,7 @@ export default function App() {
         refreshAttachments()
       } catch (err) {
         console.error('Upload failed', err)
-        alert('Could not upload the file(s). Please try again.')
+        alert('Could not upload the file(s): ' + (err?.message || 'please try again.'))
       }
     },
     [refreshAttachments],

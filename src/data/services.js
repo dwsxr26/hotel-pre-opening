@@ -1,4 +1,5 @@
 import { supabase } from '../supabase'
+import { safeName } from './attachments'
 
 const BUCKET = 'attachments'
 const ENTRY_COLS = 'id, line_id, month, type, title, amount_ex_vat, vat_pct, pay_status, file_path, file_name, auto_from'
@@ -65,7 +66,7 @@ export async function deleteServiceEntry(id, filePath) {
 
 // --- invoice files (reuse the attachments bucket) --------------------------
 export async function uploadServiceFile(file) {
-  const path = `svc-${crypto.randomUUID()}-${file.name}`
+  const path = `svc-${crypto.randomUUID()}-${safeName(file.name)}`
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false })
   if (error) throw error
   return { path, name: file.name }
