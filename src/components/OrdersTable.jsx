@@ -81,6 +81,7 @@ export default function OrdersTable({
   onAddDepartment,
   onUndo,
   canUndo,
+  isAdmin = false,
   invoicesByItem = {},
   invoicedByItem = {},
   onInvoiceCommit,
@@ -244,7 +245,23 @@ export default function OrdersTable({
         size: 120,
         meta: { align: 'num', filter: 'none' },
         enableColumnFilter: false,
-        cell: ({ getValue }) => <span className="cell-pad cell-num" title="Locked budget">{formatMoney2(getValue())}</span>,
+        // Budget is admin-only: admins edit it (with a confirm), everyone else
+        // sees it locked. The DB (migration 0016) enforces this too.
+        cell: ({ row, getValue }) =>
+          isAdmin ? (
+            <ConfirmEditCell
+              value={getValue()}
+              field="budget"
+              label="Budget ex. VAT"
+              numeric
+              parse={(s) => Number(s) || 0}
+              formatValue={(v) => formatMoney2(v)}
+              editValue={(v) => (v ? String(v) : '')}
+              onConfirm={(patch, meta) => requestConfirm(row.original.id, patch, meta)}
+            />
+          ) : (
+            <span className="cell-pad cell-num" title="Budget — admins only">{formatMoney2(getValue())}</span>
+          ),
       },
       {
         id: 'vs_budget',
@@ -366,7 +383,7 @@ export default function OrdersTable({
       },
     ]
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categories, departments, people, suppliers, invoicesByItem, invoicedByItem])
+  }, [categories, departments, people, suppliers, invoicesByItem, invoicedByItem, isAdmin])
 
   // Reconcile a saved column order with the current columns: keep the user's
   // ordering for known columns and append any new columns (so a schema change

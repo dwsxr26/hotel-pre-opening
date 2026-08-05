@@ -29,7 +29,7 @@ export const FILTER_COLUMNS = [
 ]
 
 // Column ids that require a confirmation dialog before an edit is committed.
-export const CONFIRM_EDIT_COLUMNS = new Set(['package', 'item', 'category', 'unit_price'])
+export const CONFIRM_EDIT_COLUMNS = new Set(['package', 'item', 'category', 'unit_price', 'budget'])
 
 // The two leftmost columns stay pinned when scrolling horizontally.
 export const PINNED_COLUMNS = ['package', 'item']

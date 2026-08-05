@@ -1,29 +1,29 @@
 import { useState } from 'react'
-import { Receipt } from 'lucide-react'
+import { Check, Receipt } from 'lucide-react'
 import InvoicesModal from '../InvoicesModal'
 
-// Invoices column cell: a receipt icon + count. Clicking opens a viewport-level
-// modal (so it isn't clipped by the table) to add/edit invoices and their
-// evidence for this line item.
+// Invoice column cell: a receipt icon (with a tick once an invoice is attached).
+// Each order line carries at most one invoice. Clicking opens a viewport-level
+// modal (so it isn't clipped by the table) to add / edit / remove it.
 export default function InvoicesCell({ item, invoices = [], onCommit, onDownload }) {
   const [open, setOpen] = useState(false)
-  const count = invoices.length
+  const invoice = invoices[0] || null
   return (
     <span className="att-cell">
       <button
         type="button"
-        className={`att-btn ${count ? 'has' : ''}`}
+        className={`att-btn ${invoice ? 'has' : ''}`}
         onClick={() => setOpen(true)}
-        title={count ? `${count} invoice(s)` : 'Add invoice'}
+        title={invoice ? 'Invoice attached — click to view/edit' : 'Add invoice'}
       >
         <Receipt size={14} />
-        {count > 0 && <span className="att-count">{count}</span>}
+        {invoice && <Check size={11} className="att-count" />}
       </button>
       {open && (
         <InvoicesModal
           item={item}
-          invoices={invoices}
-          onCommit={onCommit}
+          invoice={invoice}
+          onCommit={(ops) => onCommit(item.id, ops)}
           onDownload={onDownload}
           onClose={() => setOpen(false)}
         />

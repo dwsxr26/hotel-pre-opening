@@ -19,10 +19,14 @@ Two tabs:
 - **Editing** — Owner, Status, Qty, Supplier, Invoice/order no., dates and
   Description edit inline with no prompt. **Package, Item, Category and Unit
   price require a confirmation** before saving.
-- **Invoices** — the last column holds structured invoices per line item
-  (Description / payment status / ex-VAT / VAT % / total, each with one evidence
-  file). The grid shows an **Invoiced (ex VAT)** column and a live total, and the
-  Metrics panel rolls invoices into an **Invoiced** figure.
+- **Invoices** — the last column holds one invoice/receipt per line item
+  (Description / payment status / ex-VAT / VAT % / total + one evidence file).
+  There is exactly one invoice per line: if a package is split across suppliers,
+  add a new line and an admin re-budgets it. The grid shows an
+  **Invoiced (ex VAT)** column and a live total, and the Metrics panel rolls
+  invoices into an **Invoiced** figure.
+- **Budget** — the per-line locked budget is **admin-only**: admins edit it
+  (with a confirmation), everyone else sees it read-only. Enforced in the DB.
 - **Department** — dropdown, auto-allocated from category/item at seed time and
   overridable per row.
 - **Category** — dropdown with an inline **"+ Add new category…"** that creates
@@ -43,9 +47,9 @@ Two tabs:
 
 1. **Create a Supabase project** (https://supabase.com → New project).
 2. In the project's **SQL Editor**, run the migrations in
-   [`supabase/migrations/`](supabase/migrations/) **in order**, `0001…0015`.
+   [`supabase/migrations/`](supabase/migrations/) **in order**, `0001…0016`.
    They create every table with RLS, the file-attachment bucket, the invite
-   allowlist and the invoice tables.
+   allowlist, the invoice table and the admin-only budget guard.
 3. In **Authentication → Providers**, make sure **Email** is enabled (magic link
    and password). Wire the "Before User Created" hook from `0013` to gate signup
    to the allowlist.
@@ -92,7 +96,7 @@ There is no test suite — verify changes with `npm run lint` and by running the
 ## Project layout
 
 ```
-supabase/migrations/*               schema + RLS, numbered 0001…0015
+supabase/migrations/*               schema + RLS, numbered 0001…0016
 supabase/seed/*                     seed JSON for items + services
 scripts/*                           seed + evidence-export scripts
 src/lib/*                           pure logic (format, departments, serviceCalc, csv…)

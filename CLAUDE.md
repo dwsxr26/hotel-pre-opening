@@ -85,18 +85,20 @@ stack, optimistic edits, realtime refresh).
   persisted to the `view_prefs` table via RLS).
 - **`src/components/*`** — presentational + interactive UI.
   `components/cells/*` are the per-column inline editors for the orders grid;
-  `components/services/*` is the whole Overview module. Order line items carry
-  their own invoices (amount + VAT + pay-status + one evidence file each) via
+  `components/services/*` is the whole Overview module. Each order line item
+  carries at most ONE invoice (amount + VAT + pay-status + one evidence file) via
   [InvoicesModal](src/components/InvoicesModal.jsx) /
   [InvoicesCell](src/components/cells/InvoicesCell.jsx) →
   [itemInvoices](src/data/itemInvoices.js) — the grid's last column and its
-  "Invoiced" column. These feed the same payment-run export as service invoices.
+  "Invoiced" column. Split a package by adding a new line (admin re-budgets),
+  never by adding a second invoice. These feed the same payment-run export as
+  service invoices.
 
 ### Data model (Supabase)
 
-Migrations live in `supabase/migrations/`, numbered `0001…0015`, applied in
+Migrations live in `supabase/migrations/`, numbered `0001…0016`, applied in
 order via the Supabase SQL editor. Key tables: `items`, `item_invoices`
-(per-line OS&E invoices), `categories`, `departments`, `view_prefs`, `profiles`,
+(one-per-line OS&E invoice, `unique (item_id)`), `categories`, `departments`, `view_prefs`, `profiles`,
 `allowed_members` (invite allowlist), `attachments`, `service_lines`,
 `service_entries`, `service_month_close`, `service_export_runs` (per-user
 payment-run log). RLS is on everywhere.
@@ -108,9 +110,11 @@ error — never trust the client for authz).
 - **Optimistic edits everywhere**: update local state first, call Supabase, and
   revert + `alert()` on error. Single edits also push an **undo** entry
   (Ctrl/Cmd+Z, last 30 actions) — see `onEdit`/`onBulkEdit`/`undo` in App.jsx.
-- **Confirm-before-save columns**: `package`, `item`, `category`, `unit_price`
-  require a confirmation dialog (`CONFIRM_EDIT_COLUMNS`). Everything else edits
-  inline with no prompt.
+- **Confirm-before-save columns**: `package`, `item`, `category`, `unit_price`,
+  `budget` require a confirmation dialog (`CONFIRM_EDIT_COLUMNS`). Everything else
+  edits inline with no prompt. **`budget` is also admin-only** — the grid only
+  shows the editor to admins, and migration 0016 enforces it in the DB (a
+  non-admin's budget change raises; server-side service-role scripts are exempt).
 - **Graceful degradation on missing migrations**: services data and the
   allowlist load in their own `try/catch` so an un-run migration (0007, 0013)
   degrades that feature instead of breaking the Orders tab. Preserve this when

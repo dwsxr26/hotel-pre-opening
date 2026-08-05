@@ -551,6 +551,7 @@ export default function App() {
             onAddDepartment={onAddDepartment}
             onUndo={undo}
             canUndo={undoCount > 0}
+            isAdmin={!!myProfile?.is_admin}
             invoicesByItem={itemInvoices}
             invoicedByItem={invoicedByItem}
             onInvoiceCommit={onInvoiceCommit}
