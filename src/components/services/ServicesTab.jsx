@@ -16,7 +16,7 @@ const DEFAULT_SERVICES_VIEW = {
 const monthLabel = (key) => SERVICE_MONTHS.find((m) => m.key === key)?.label || key
 
 export default function ServicesTab({
-  lines, entriesByLine, closesByLine, items, isAdmin, people, onLineUpdate,
+  lines, entriesByLine, closesByLine, items, invoicesByItem, isAdmin, people, onLineUpdate,
   onCommit, onDownload, onReopen,
 }) {
   const { prefs: view, update: setView } = useViewPrefs(true, DEFAULT_SERVICES_VIEW, 'services')
@@ -202,6 +202,8 @@ export default function ServicesTab({
         <PaymentRunModal
           lines={visibleLines}
           entriesByLine={entriesByLine}
+          items={items}
+          invoicesByItem={invoicesByItem}
           onClose={() => setShowPaymentRun(false)}
         />
       )}

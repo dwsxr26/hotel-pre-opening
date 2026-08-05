@@ -5,7 +5,7 @@ import StatusBars from './StatusBars'
 
 // Collapsible "Metrics" panel: the top-line KPI stats plus the line-items-by-
 // status bars, over the whole list. Collapsed by default.
-export default function Metrics({ items, open, onToggle }) {
+export default function Metrics({ items, invoicedByItem = {}, open, onToggle }) {
   const kpi = useMemo(() => {
     const total = items.length
     const budget = items.reduce((s, r) => s + (Number(r.budget) || 0), 0)
@@ -15,12 +15,14 @@ export default function Metrics({ items, open, onToggle }) {
     const remaining = items
       .filter((r) => r.status === 'Not ordered')
       .reduce((s, r) => s + lineTotal(r), 0)
-    return { total, budget, ordered, remaining }
-  }, [items])
+    const invoiced = items.reduce((s, r) => s + (invoicedByItem[r.id] || 0), 0)
+    return { total, budget, ordered, remaining, invoiced }
+  }, [items, invoicedByItem])
 
   const cards = [
     { label: 'Budget', value: formatMoney(kpi.budget), hint: 'sum of Budget column' },
     { label: 'Ordered', value: formatMoney(kpi.ordered), hint: 'placed or complete' },
+    { label: 'Invoiced', value: formatMoney(kpi.invoiced), hint: 'invoices added, ex VAT' },
     { label: 'Remaining', value: formatMoney(kpi.remaining), hint: 'not yet ordered' },
     { label: 'Line items', value: formatInt(kpi.total), hint: 'across all packages' },
   ]
@@ -31,7 +33,7 @@ export default function Metrics({ items, open, onToggle }) {
         <ChevronDown size={16} className={`collapse-chev ${open ? 'open' : ''}`} />
         <span className="card-hd" style={{ padding: 0, border: 0 }}>Metrics</span>
         <span className="collapse-hint">
-          Budget {formatMoney(kpi.budget)} · Ordered {formatMoney(kpi.ordered)} · Remaining {formatMoney(kpi.remaining)} · {open ? 'Hide' : 'Show'}
+          Budget {formatMoney(kpi.budget)} · Ordered {formatMoney(kpi.ordered)} · Invoiced {formatMoney(kpi.invoiced)} · Remaining {formatMoney(kpi.remaining)} · {open ? 'Hide' : 'Show'}
         </span>
       </button>
       {open && (

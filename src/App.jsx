@@ -9,7 +9,9 @@ import { addDepartment, fetchDepartments } from './data/departments'
 import { DEPARTMENTS } from './lib/departments'
 import { ensureMyProfile, fetchProfiles, setMyPassword, updateMyProfile, setAdmin } from './data/profiles'
 import { addAllowedMember, fetchAllowedMembers, removeAllowedMember } from './data/members'
-import { fetchAttachments, removeLink, signedUrl, uploadFiles } from './data/attachments'
+import {
+  fetchItemInvoices, addItemInvoice, updateItemInvoice, deleteItemInvoice, uploadInvoiceFile, invoiceSignedUrl,
+} from './data/itemInvoices'
 import { COLUMNS_VERSION, DEFAULT_COLUMN_ORDER } from './lib/constants'
 import { displayName } from './lib/people'
 import Auth from './components/Auth'
@@ -48,7 +50,7 @@ export default function App() {
   const [items, setItems] = useState([])
   const [categories, setCategories] = useState([])
   const [departments, setDepartments] = useState(DEPARTMENTS)
-  const [attachments, setAttachments] = useState({})
+  const [itemInvoices, setItemInvoices] = useState({})
   const [serviceLines, setServiceLines] = useState([])
   const [serviceEntries, setServiceEntries] = useState({})
   const [serviceCloses, setServiceCloses] = useState({})
@@ -72,16 +74,18 @@ export default function App() {
     let active = true
     const load = () =>
       Promise.all([
-        fetchItems(), fetchCategories(), fetchProfiles(), fetchAttachments(), fetchDepartments(),
+        fetchItems(), fetchCategories(), fetchProfiles(), fetchDepartments(),
         // The allowlist only exists once migration 0013 has been run.
         fetchAllowedMembers().catch(() => []),
+        // Order invoices only exist once migration 0015 has been run.
+        fetchItemInvoices().catch(() => ({})),
       ])
-        .then(([its, cats, profs, atts, depts, allowed]) => {
+        .then(([its, cats, profs, depts, allowed, invoices]) => {
           if (!active) return
           setItems(its)
           setCategories(cats.map((c) => c.name))
           setProfiles(profs)
-          setAttachments(atts)
+          setItemInvoices(invoices)
           setAllowedMembers(allowed)
           if (depts.length) setDepartments(depts.map((d) => d.name))
         })
@@ -333,43 +337,64 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [undo])
 
-  // File attachments (stored in Supabase Storage; grid only shows counts).
-  const refreshAttachments = useCallback(() => {
-    fetchAttachments().then(setAttachments).catch((err) => console.error('Attachments load failed', err))
-  }, [])
-  const onUploadFiles = useCallback(
-    async (itemIds, files) => {
+  // Order invoices (amount + VAT + payment status + one evidence file each,
+  // stored in Supabase Storage). Buffered in the modal; committed here.
+  const refreshItemInvoices = useCallback(
+    () => fetchItemInvoices().then(setItemInvoices).catch((e) => console.error('Invoices reload failed', e)),
+    [],
+  )
+  const onInvoiceCommit = useCallback(
+    async (itemId, ops) => {
       try {
-        await uploadFiles(files, itemIds)
-        refreshAttachments()
-      } catch (err) {
-        console.error('Upload failed', err)
-        alert('Could not upload the file(s): ' + (err?.message || 'please try again.'))
+        for (const a of ops.adds || []) {
+          let file_path = null
+          let file_name = null
+          if (a._file) {
+            const up = await uploadInvoiceFile(a._file)
+            file_path = up.path
+            file_name = up.name
+          }
+          await addItemInvoice({
+            item_id: itemId, title: a.title || '', amount_ex_vat: Number(a.amount_ex_vat) || 0,
+            vat_pct: Number(a.vat_pct) || 0, pay_status: a.pay_status || 'to_be_paid', file_path, file_name,
+          })
+        }
+        for (const u of ops.updates || []) {
+          const patch = { ...u.patch }
+          if (u._file) {
+            const up = await uploadInvoiceFile(u._file)
+            patch.file_path = up.path
+            patch.file_name = up.name
+          }
+          if (Object.keys(patch).length) await updateItemInvoice(u.id, patch)
+        }
+        for (const d of ops.deletes || []) await deleteItemInvoice(d.id, d.file_path)
+        await refreshItemInvoices()
+      } catch (e) {
+        console.error('Invoice commit failed', e)
+        alert('Could not save the invoices. Please try again.')
       }
     },
-    [refreshAttachments],
+    [refreshItemInvoices],
   )
-  const onRemoveAttachment = useCallback(
-    async (itemId, attachmentId) => {
-      try {
-        await removeLink(itemId, attachmentId)
-        refreshAttachments()
-      } catch (err) {
-        console.error('Remove attachment failed', err)
-        alert('Could not remove the file. Please try again.')
-      }
-    },
-    [refreshAttachments],
-  )
-  const onDownloadAttachment = useCallback(async (path) => {
+  const onInvoiceDownload = useCallback(async (path) => {
     try {
-      const url = await signedUrl(path)
+      const url = await invoiceSignedUrl(path)
       window.open(url, '_blank', 'noopener')
     } catch (err) {
       console.error('Download failed', err)
       alert('Could not open the file. Please try again.')
     }
   }, [])
+
+  // Invoiced-to-date (ex VAT) per line item, for the grid column + Metrics.
+  const invoicedByItem = useMemo(() => {
+    const m = {}
+    for (const [id, list] of Object.entries(itemInvoices)) {
+      m[id] = list.reduce((s, e) => s + (Number(e.amount_ex_vat) || 0), 0)
+    }
+    return m
+  }, [itemInvoices])
 
   // Delete selected line items (optimistic; revert on error).
   const onDeleteItems = useCallback(async (ids) => {
@@ -470,6 +495,7 @@ export default function App() {
       {tab === 'orders' && (
         <Metrics
           items={filteredItems}
+          invoicedByItem={invoicedByItem}
           open={view.metricsOpen === true}
           onToggle={() => setView({ metricsOpen: !(view.metricsOpen === true) })}
         />
@@ -525,10 +551,10 @@ export default function App() {
             onAddDepartment={onAddDepartment}
             onUndo={undo}
             canUndo={undoCount > 0}
-            attachmentsByItem={attachments}
-            onUploadFiles={onUploadFiles}
-            onRemoveAttachment={onRemoveAttachment}
-            onDownloadAttachment={onDownloadAttachment}
+            invoicesByItem={itemInvoices}
+            invoicedByItem={invoicedByItem}
+            onInvoiceCommit={onInvoiceCommit}
+            onInvoiceDownload={onInvoiceDownload}
           />
         </>
       ) : (
@@ -537,6 +563,7 @@ export default function App() {
           entriesByLine={serviceEntries}
           closesByLine={serviceCloses}
           items={items}
+          invoicesByItem={itemInvoices}
           isAdmin={!!myProfile?.is_admin}
           people={people}
           onLineUpdate={onServiceLineUpdate}

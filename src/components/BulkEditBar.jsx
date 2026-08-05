@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { Paperclip, Trash2, X } from 'lucide-react'
+import { Trash2, X } from 'lucide-react'
 import { STATUSES } from '../lib/constants'
-import AttachmentsModal from './AttachmentsModal'
 
 // Appears when rows are selected. You set any of the fields (blank = leave
 // unchanged) and click Apply; the parent confirms and writes the batch.
@@ -18,13 +17,11 @@ export default function BulkEditBar({
   onApply,
   onClear,
   onSelectAllFiltered,
-  onAttach,
   onDelete,
 }) {
   const [fields, setFields] = useState({
     category: NC, owner: NC, department: NC, status: NC, supplier: NC, order_date: NC, est_arrival: NC,
   })
-  const [showAttach, setShowAttach] = useState(false)
 
   const set = (k, v) => setFields((f) => ({ ...f, [k]: v }))
 
@@ -89,24 +86,12 @@ export default function BulkEditBar({
       </div>
 
       <div className="bulkbar-actions">
-        <button className="btn" onClick={() => setShowAttach(true)} title="Attach file(s) to the selected items">
-          <Paperclip size={14} /> Attach
-        </button>
         <button className="btn btn-primary" onClick={apply}>Apply to {count}</button>
         <button className="btn icon-btn btn-danger" title={`Delete ${count} selected`} onClick={onDelete}>
           <Trash2 size={16} />
         </button>
         <button className="btn icon-btn" title="Clear selection" onClick={onClear}><X size={16} /></button>
       </div>
-
-      {showAttach && (
-        <AttachmentsModal
-          title={`Attach files to ${count} item${count === 1 ? '' : 's'}`}
-          subtitle="The uploaded file(s) will be linked to every selected line item."
-          onUpload={onAttach}
-          onClose={() => setShowAttach(false)}
-        />
-      )}
     </div>
   )
 }

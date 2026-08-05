@@ -47,34 +47,27 @@ async function main() {
   let ok = 0
   let fail = 0
 
-  // --- Orders attachments (many-to-many with items) ------------------------
-  const { data: links, error: linkErr } = await supabase
-    .from('item_attachments')
-    .select('attachment:attachments(id, file_name:filename, path), item:items(item, department, supplier, invoice_no, order_no)')
-  if (linkErr) throw linkErr
+  // --- Orders invoices (one evidence file each) ----------------------------
+  const { data: orderInvoices, error: invErr } = await supabase
+    .from('item_invoices')
+    .select('id, file_path, file_name, amount_ex_vat, vat_pct, item:items(item, department, supplier, invoice_no, order_no)')
+    .not('file_path', 'is', null)
+  if (invErr) throw invErr
 
-  // Group by attachment so a shared file downloads once.
-  const byAtt = new Map()
-  for (const row of links ?? []) {
-    if (!row.attachment) continue
-    const a = row.attachment
-    if (!byAtt.has(a.id)) byAtt.set(a.id, { att: a, items: [] })
-    if (row.item) byAtt.get(a.id).items.push(row.item)
-  }
-  for (const { att, items } of byAtt.values()) {
-    const saved = `orders/${att.id.slice(0, 8)}-${sanitize(att.file_name)}`
+  for (const inv of orderInvoices ?? []) {
+    const it = inv.item || {}
+    const saved = `orders/${inv.id.slice(0, 8)}-${sanitize(inv.file_name)}`
     try {
-      await download(att.path, join(OUT, saved))
+      await download(inv.file_path, join(OUT, saved))
       ok++
-      const it = items[0] || {}
       manifest.push([
-        'Orders', saved, att.file_name, it.department || '',
-        items.map((x) => x.item).join(' | '), it.supplier || '', it.invoice_no || '', it.order_no || '',
-        '', '', '', att.path,
+        'Orders', saved, inv.file_name, it.department || '',
+        it.item || '', it.supplier || '', it.invoice_no || '', it.order_no || '',
+        '', inv.amount_ex_vat, inv.vat_pct, inv.file_path,
       ])
     } catch (e) {
       fail++
-      console.error('Failed:', att.path, e.message)
+      console.error('Failed:', inv.file_path, e.message)
     }
   }
 

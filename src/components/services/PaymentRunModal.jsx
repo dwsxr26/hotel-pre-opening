@@ -7,7 +7,7 @@ import { collectToBePaid, exportPaymentRun, sumEx } from '../../data/paymentRun'
 // Bookkeeper's payment-run export: one zip with a summary CSV + every evidence
 // file, for invoices marked "To be paid". Offers all of them, or only the ones
 // added since this user's last download.
-export default function PaymentRunModal({ lines, entriesByLine, onClose }) {
+export default function PaymentRunModal({ lines, entriesByLine, items = [], invoicesByItem = {}, onClose }) {
   const [lastTs, setLastTs] = useState(undefined) // undefined = loading, null = never
   const [busy, setBusy] = useState(false)
 
@@ -19,10 +19,14 @@ export default function PaymentRunModal({ lines, entriesByLine, onClose }) {
     return () => { active = false }
   }, [])
 
-  const all = useMemo(() => collectToBePaid(lines, entriesByLine, null), [lines, entriesByLine])
+  const itemsById = useMemo(() => Object.fromEntries(items.map((i) => [i.id, i])), [items])
+  const all = useMemo(
+    () => collectToBePaid(lines, entriesByLine, itemsById, invoicesByItem, null),
+    [lines, entriesByLine, itemsById, invoicesByItem],
+  )
   const fresh = useMemo(
-    () => (lastTs ? collectToBePaid(lines, entriesByLine, lastTs) : all),
-    [lines, entriesByLine, lastTs, all],
+    () => (lastTs ? collectToBePaid(lines, entriesByLine, itemsById, invoicesByItem, lastTs) : all),
+    [lines, entriesByLine, itemsById, invoicesByItem, lastTs, all],
   )
 
   const run = async (picked, mode) => {
@@ -52,7 +56,7 @@ export default function PaymentRunModal({ lines, entriesByLine, onClose }) {
       <div className="modal pr-modal" onMouseDown={(e) => e.stopPropagation()}>
         <button className="me-close" onClick={() => !busy && onClose()} title="Close"><X size={18} /></button>
         <h3>Payment run</h3>
-        <p>Export invoices marked <strong>To be paid</strong> — a summary CSV plus every evidence file, bundled in one zip.</p>
+        <p>Export invoices marked <strong>To be paid</strong> — across services and OS&amp;E orders — as a summary CSV plus every evidence file, bundled in one zip.</p>
 
         <div className="pr-opts">
           <button className="pr-opt" disabled={busy || !all.length} onClick={() => run(all, 'all')}>

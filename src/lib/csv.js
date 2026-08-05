@@ -2,7 +2,7 @@ import { lineTotal } from './format'
 
 const HEADERS = [
   'Package', 'Item', 'Category', 'Department', 'Owner', 'Status', 'Qty',
-  'Unit price', 'VAT %', 'Unit incl. VAT', 'Total', 'Budget', 'Supplier', 'Order date', 'Invoice #', 'Order #',
+  'Unit price', 'VAT %', 'Unit incl. VAT', 'Total', 'Budget', 'Invoiced ex VAT', 'Supplier', 'Order date', 'Invoice #', 'Order #',
   'Est. arrival', 'Description/ref',
 ]
 
@@ -11,15 +11,16 @@ const esc = (v) => {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
-// Build a CSV string from item rows (plain objects).
-export function itemsToCsv(rows) {
+// Build a CSV string from item rows (plain objects). `invoicedByItem` maps an
+// item id to its invoiced-to-date total (ex VAT).
+export function itemsToCsv(rows, invoicedByItem = {}) {
   const lines = [HEADERS.join(',')]
   for (const r of rows) {
     lines.push(
       [
         r.package, r.item, r.category, r.department, r.owner, r.status, r.qty,
         r.unit_price, r.vat_pct, (Number(r.unit_price) || 0) * (1 + (Number(r.vat_pct) || 0) / 100),
-        lineTotal(r), r.budget, r.supplier, r.order_date || '', r.invoice_no, r.order_no,
+        lineTotal(r), r.budget, invoicedByItem[r.id] || 0, r.supplier, r.order_date || '', r.invoice_no, r.order_no,
         r.est_arrival || '', r.ref,
       ]
         .map(esc)

@@ -61,8 +61,8 @@ stack, optimistic edits, realtime refresh).
 ### Layers
 
 - **`src/data/*`** — the only place that talks to Supabase. One module per
-  table/domain (`items`, `categories`, `departments`, `profiles`, `members`,
-  `attachments`, `services`, `viewPrefs`). Each exports plain async CRUD
+  table/domain (`items`, `itemInvoices`, `categories`, `departments`, `profiles`,
+  `members`, `attachments`, `services`, `paymentRun`, `viewPrefs`). Each exports plain async CRUD
   functions that `throw` on error; callers handle the error. See
   [src/data/items.js](src/data/items.js) for the canonical shape (a shared
   `COLUMNS` string, `fetch/update/add/updateMany/delete`, plus a realtime
@@ -85,15 +85,21 @@ stack, optimistic edits, realtime refresh).
   persisted to the `view_prefs` table via RLS).
 - **`src/components/*`** — presentational + interactive UI.
   `components/cells/*` are the per-column inline editors for the orders grid;
-  `components/services/*` is the whole Overview module.
+  `components/services/*` is the whole Overview module. Order line items carry
+  their own invoices (amount + VAT + pay-status + one evidence file each) via
+  [InvoicesModal](src/components/InvoicesModal.jsx) /
+  [InvoicesCell](src/components/cells/InvoicesCell.jsx) →
+  [itemInvoices](src/data/itemInvoices.js) — the grid's last column and its
+  "Invoiced" column. These feed the same payment-run export as service invoices.
 
 ### Data model (Supabase)
 
-Migrations live in `supabase/migrations/`, numbered `0001…0014`, applied in
-order via the Supabase SQL editor. Key tables: `items`, `categories`,
-`departments`, `view_prefs`, `profiles`, `allowed_members` (invite allowlist),
-`attachments`, `service_lines`, `service_entries`, `service_month_close`,
-`service_export_runs` (per-user payment-run log). RLS is on everywhere.
+Migrations live in `supabase/migrations/`, numbered `0001…0015`, applied in
+order via the Supabase SQL editor. Key tables: `items`, `item_invoices`
+(per-line OS&E invoices), `categories`, `departments`, `view_prefs`, `profiles`,
+`allowed_members` (invite allowlist), `attachments`, `service_lines`,
+`service_entries`, `service_month_close`, `service_export_runs` (per-user
+payment-run log). RLS is on everywhere.
 Admin-only writes are enforced in SQL (client shows an alert on the resulting
 error — never trust the client for authz).
 
@@ -115,14 +121,15 @@ error — never trust the client for authz).
 - **Money**: forecast/budget stored **ex-VAT**; default VAT 22%. Prefer
   `Math.round` to cents to avoid floating-point `€0.00` showing as non-zero
   (see recent commits on this).
-- **Payment run**: service invoices carry a `pay_status` (`to_be_paid` /
-  `paid_by_card` / `paid_by_bank`; only `to_be_paid` is exported, so ticking an
-  invoice paid drops it from the next run). The Overview toolbar's "Payment run"
-  button
+- **Payment run**: both service invoices and OS&E order invoices carry a
+  `pay_status` (`to_be_paid` / `paid_by_card` / `paid_by_bank`; only `to_be_paid`
+  is exported, so ticking an invoice paid drops it from the next run). The
+  Overview toolbar's "Payment run" button
   ([PaymentRunModal](src/components/services/PaymentRunModal.jsx) →
   [paymentRun.js](src/data/paymentRun.js)) zips a summary CSV + evidence files
-  for all `to_be_paid` invoices, or only those added since the current user's
-  last export (tracked in `service_export_runs`). Uses `fflate` for zipping.
+  for **all** `to_be_paid` invoices across services *and* orders (a `Source`
+  column distinguishes them), or only those added since the current user's last
+  export (tracked in `service_export_runs`). Uses `fflate` for zipping.
 - **Windows / PowerShell** is the primary shell here; a Bash tool is also
   available for POSIX scripts.
 

@@ -25,7 +25,7 @@ import QtyCell from './cells/QtyCell'
 import StatusCell from './cells/StatusCell'
 import DeptCell from './cells/DeptCell'
 import DateCell from './cells/DateCell'
-import AttachmentsCell from './cells/AttachmentsCell'
+import InvoicesCell from './cells/InvoicesCell'
 
 // Filter shape: undefined | {type:'text',text} | {type:'set',values:[]}
 function columnFilterFn(row, columnId, fv) {
@@ -81,10 +81,10 @@ export default function OrdersTable({
   onAddDepartment,
   onUndo,
   canUndo,
-  attachmentsByItem = {},
-  onUploadFiles,
-  onRemoveAttachment,
-  onDownloadAttachment,
+  invoicesByItem = {},
+  invoicedByItem = {},
+  onInvoiceCommit,
+  onInvoiceDownload,
 }) {
   const [pending, setPending] = useState(null) // {id, patch, meta}
   const [bulkPending, setBulkPending] = useState(null) // {ids, patch, summary}
@@ -259,6 +259,17 @@ export default function OrdersTable({
         },
       },
       {
+        id: 'invoiced',
+        header: () => twoLine('Invoiced', 'ex. VAT'),
+        accessorFn: (r) => invoicedByItem[r.id] || 0,
+        size: 120,
+        meta: { align: 'num', filter: 'none' },
+        enableColumnFilter: false,
+        cell: ({ getValue }) => (
+          <span className="cell-pad cell-num" title="Sum of invoices added to this line, ex. VAT">{formatMoney2(getValue())}</span>
+        ),
+      },
+      {
         accessorKey: 'supplier',
         header: 'Supplier',
         size: 150,
@@ -331,19 +342,18 @@ export default function OrdersTable({
       },
       {
         id: 'files',
-        header: 'Files & Comments',
+        header: 'Invoices & Comments',
         size: 240,
         enableSorting: false,
         enableColumnFilter: false,
         meta: { filter: 'none' },
         cell: ({ row }) => (
           <div className="files-cell">
-            <AttachmentsCell
-              itemId={row.original.id}
-              files={attachmentsByItem[row.original.id]}
-              onUpload={onUploadFiles}
-              onRemove={onRemoveAttachment}
-              onDownload={onDownloadAttachment}
+            <InvoicesCell
+              item={row.original}
+              invoices={invoicesByItem[row.original.id]}
+              onCommit={onInvoiceCommit}
+              onDownload={onInvoiceDownload}
             />
             <InlineTextCell
               value={row.original.comment}
@@ -356,7 +366,7 @@ export default function OrdersTable({
       },
     ]
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categories, departments, people, suppliers, attachmentsByItem])
+  }, [categories, departments, people, suppliers, invoicesByItem, invoicedByItem])
 
   // Reconcile a saved column order with the current columns: keep the user's
   // ordering for known columns and append any new columns (so a schema change
@@ -496,16 +506,16 @@ export default function OrdersTable({
 
   // The rendered rows are memoized on what actually changes their content
   // (data/sort/filter/page -> `rows`; reorder -> `columnOrder`; selection;
-  // dropdown sources & attachments -> `columns`/`attachmentsByItem`). Column
+  // dropdown sources & invoices -> `columns`/`invoicesByItem`). Column
   // *sizing* is deliberately excluded, so resizing only updates the <colgroup>
   // widths + pinned-left CSS variables — rows are not re-rendered.
   const bodyRows = useMemo(
     () =>
       rows.map((row) => {
         const isSel = selected.has(row.original.id)
-        // Any status other than "Not ordered" needs invoice #, order # and a file.
+        // Any status other than "Not ordered" needs invoice #, order # and an invoice.
         const needsInfo = row.original.status !== 'Not ordered'
-        const files = attachmentsByItem[row.original.id]
+        const invoices = invoicesByItem[row.original.id]
         return (
           <tr key={row.id} className={isSel ? 'row-selected' : ''}>
             <td className="pinned pin-select select-cell">
@@ -518,7 +528,7 @@ export default function OrdersTable({
                 needsInfo &&
                 ((col.id === 'invoice_no' && !row.original.invoice_no) ||
                   (col.id === 'order_no' && !row.original.order_no) ||
-                  (col.id === 'files' && !(files && files.length)))
+                  (col.id === 'files' && !(invoices && invoices.length)))
               const vs = col.id === 'vs_budget' ? vsClass(cell.getValue()) : ''
               return (
                 <td
@@ -533,33 +543,34 @@ export default function OrdersTable({
         )
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rows, view.columnOrder, columns, selected, attachmentsByItem],
+    [rows, view.columnOrder, columns, selected, invoicesByItem],
   )
 
   const rowsData = useMemo(() => filteredRows.map((r) => r.original), [filteredRows])
 
   // Column totals for the sticky footer — only the currency columns.
   const colTotals = useMemo(() => {
-    const t = { unit_price: 0, unit_incl: 0, total: 0, budget: 0 }
+    const t = { unit_price: 0, unit_incl: 0, total: 0, budget: 0, invoiced: 0 }
     for (const r of rowsData) {
       const unit = Number(r.unit_price) || 0
       t.unit_price += unit
       t.unit_incl += unit * (1 + (Number(r.vat_pct) || 0) / 100)
       t.total += lineTotal(r)
       t.budget += Number(r.budget) || 0
+      t.invoiced += invoicedByItem[r.id] || 0
     }
     t.vs_budget = Math.round((t.total - t.budget) * 100) / 100
     return t
-  }, [rowsData])
+  }, [rowsData, invoicedByItem])
   const pageCount = table.getPageCount()
   const pageIndex = table.getState().pagination.pageIndex
   const pageSize = table.getState().pagination.pageSize
   const firstShown = filteredRows.length === 0 ? 0 : pageIndex * pageSize + 1
   const lastShown = Math.min((pageIndex + 1) * pageSize, filteredRows.length)
 
-  const exportCsv = () => downloadCsv('florence-pre-opening.csv', itemsToCsv(rowsData))
+  const exportCsv = () => downloadCsv('florence-pre-opening.csv', itemsToCsv(rowsData, invoicedByItem))
   const missingCount = rowsData.filter(
-    (r) => r.status !== 'Not ordered' && (!r.invoice_no || !r.order_no || !(attachmentsByItem[r.id]?.length)),
+    (r) => r.status !== 'Not ordered' && (!r.invoice_no || !r.order_no || !(invoicesByItem[r.id]?.length)),
   ).length
 
   return (
@@ -612,15 +623,14 @@ export default function OrdersTable({
           onApply={applyBulk}
           onClear={clearSelection}
           onSelectAllFiltered={selectAllFiltered}
-          onAttach={(files) => onUploadFiles([...selected], files)}
           onDelete={() => setDeletePending([...selected])}
         />
       )}
 
       {missingCount > 0 && (
         <div className="warn-banner">
-          ⚠ {missingCount} order{missingCount === 1 ? '' : 's'} require additional info (invoice and/or order # and file
-          attachment).
+          ⚠ {missingCount} order{missingCount === 1 ? '' : 's'} require additional info (invoice # and/or order # and an
+          invoice with evidence).
         </div>
       )}
 
