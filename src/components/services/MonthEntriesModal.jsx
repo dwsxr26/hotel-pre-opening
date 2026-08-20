@@ -158,7 +158,7 @@ export default function MonthEntriesModal({
   // Save the invoice(s) as-is over budget and record a pending approval request.
   const saveOverBudget = () => {
     if (missingEvidence) return
-    commit(null, { amount: overBudget })
+    commit(null, { request: true, amount: overBudget })
   }
 
   const doClosePlan = () => {

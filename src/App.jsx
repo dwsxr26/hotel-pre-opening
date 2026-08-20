@@ -26,7 +26,7 @@ import {
   addServiceEntry, updateServiceEntry, deleteServiceEntry, uploadServiceFile, serviceSignedUrl,
   setMonthClose, clearMonthClose, updateServiceLine, deleteAutoEntries,
 } from './data/services'
-import { fetchServiceApprovals, requestOverspend, approveOverspend } from './data/serviceApprovals'
+import { fetchServiceApprovals, requestOverspend, approveOverspend, clearPendingOverspend } from './data/serviceApprovals'
 import { SERVICE_MONTHS } from './lib/serviceCalc'
 
 const DEFAULT_VIEW = {
@@ -224,9 +224,13 @@ export default function App() {
           await setMonthClose(lineId, month, closePlan.disposition || 'closed')
         }
         // Over-budget save: record (or re-open) a pending overspend approval for
-        // this line/month. The invoice above is already saved either way.
-        if (overspend && Number(overspend.amount) > 0.5) {
+        // this line/month. If the save is NOT an over-budget request (e.g. the
+        // invoice was removed / reduced back within budget), clear any pending
+        // approval so the month stops being yellow. Approved records are kept.
+        if (overspend?.request && Number(overspend.amount) > 0.5) {
           await requestOverspend({ line_id: lineId, month, overspend_amount: overspend.amount })
+        } else {
+          await clearPendingOverspend(lineId, month).catch((e) => console.error('Clear pending overspend failed', e))
         }
         await Promise.all([refreshServiceEntries(), refreshServiceCloses(), refreshServiceApprovals()])
       } catch (e) {

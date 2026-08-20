@@ -31,6 +31,18 @@ export async function requestOverspend({ line_id, month, overspend_amount }) {
   if (error) throw error
 }
 
+// Clear a still-pending overspend for a line/month (e.g. the over-budget invoice
+// was removed or reduced back within budget). No-op if none / already approved.
+export async function clearPendingOverspend(line_id, month) {
+  const { error } = await supabase
+    .from('service_overspend_approvals')
+    .delete()
+    .eq('line_id', line_id)
+    .eq('month', month)
+    .eq('status', 'pending')
+  if (error) throw error
+}
+
 // Approve an overspend (admin only, enforced in the DB function). `method` is
 // 'reallocated' (with reductions) or 'accepted' (with a written note).
 export async function approveOverspend(line_id, month, method, note, reductions = []) {
