@@ -4,6 +4,7 @@ import { formatMoney } from '../../lib/format'
 import { SERVICE_MONTHS, computeLine } from '../../lib/serviceCalc'
 import ConfirmModal from '../ConfirmModal'
 import FileDropModal from './FileDropModal'
+import OverspendApprovalPanel from './OverspendApprovalPanel'
 
 const sumEx = (arr) => arr.reduce((s, e) => s + (Number(e.amount_ex_vat) || 0), 0)
 const newKey = () => `new-${crypto.randomUUID()}`
@@ -70,6 +71,7 @@ function EntryRow({ item, locked, onChange, onDelete, onAttachClick, onView }) {
 
 export default function MonthEntriesModal({
   line, monthKey, monthLabel, entries, lineEntries, closesForLine, disposition,
+  approval, isAdmin, allLines, entriesByLine, closesByLine, onApprove,
   onCommit, onDownload, onReopen, onClose,
 }) {
   const locked = !!disposition
@@ -78,9 +80,13 @@ export default function MonthEntriesModal({
   const [closing, setClosing] = useState(false)
   const [choice, setChoice] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
-  const [showApproval, setShowApproval] = useState(false)
+  const [resolving, setResolving] = useState(false) // admin approval panel open
   const [saving, setSaving] = useState(false)
   const [attachKey, setAttachKey] = useState(null)
+
+  // Overspend approval state for this line/month (migration 0017).
+  const pendingApproval = approval?.status === 'pending'
+  const approvedOverspend = approval?.status === 'approved'
 
   const forecast = draft.filter((e) => e.type === 'forecast')
   const invoices = draft.filter((e) => e.type === 'invoice')
@@ -95,6 +101,8 @@ export default function MonthEntriesModal({
     .concat(draft.map((d) => ({ month: monthKey, type: d.type, amount_ex_vat: d.amount_ex_vat, vat_pct: d.vat_pct })))
   const reforecastNow = computeLine(line, simEntries, closesForLine || {}, false).reforecast
   const overBudget = Math.max(0, reforecastNow - budget)
+  // Once an admin has approved the overspend, it no longer blocks saving/closing.
+  const effectiveOver = overBudget > 0.5 && !approvedOverspend
 
   const idx = SERVICE_MONTHS.findIndex((m) => m.key === monthKey)
   const nextMonth = SERVICE_MONTHS[idx + 1]
@@ -137,19 +145,25 @@ export default function MonthEntriesModal({
     return { adds, updates, deletes }
   }
 
-  const commit = async (closePlan = null) => {
+  const commit = async (closePlan = null, overspend = null) => {
     setSaving(true)
     try {
-      await onCommit(buildOps(), closePlan)
+      await onCommit(buildOps(), closePlan, overspend)
     } finally {
       setSaving(false)
       onClose()
     }
   }
 
+  // Save the invoice(s) as-is over budget and record a pending approval request.
+  const saveOverBudget = () => {
+    if (missingEvidence) return
+    commit(null, { amount: overBudget })
+  }
+
   const doClosePlan = () => {
     if (missingEvidence) return
-    if (overBudget > 0.5) {
+    if (effectiveOver) {
       if (!canRebalance) return
       if (choice === 'reduce-next') {
         let rem = overBudget
@@ -233,29 +247,42 @@ export default function MonthEntriesModal({
               {missingEvidence && (
                 <div className="me-warn">Attach evidence to every invoice before you can save.</div>
               )}
-              {overBudget > 0.5 ? (
+              {approvedOverspend && (
+                <div className="me-approved">
+                  ✓ Overspend approved{approval?.method === 'reallocated' ? ' — budget reallocated from other lines' : ' — accepted'}. This month can be closed.
+                </div>
+              )}
+              {effectiveOver ? (
                 <>
                   <div className="me-warn">Reforecast {formatMoney(reforecastNow)} is {formatMoney(overBudget)} over budget ({formatMoney(budget)}).</div>
-                  {canRebalance ? (
+                  {canRebalance && (
                     <>
-                      <div className="me-status">Choose an option to rebalance before saving:</div>
+                      <div className="me-status">Option A — rebalance this line to stay on budget:</div>
                       <div className="me-close-actions">
                         <div className="seg">
                           {seg('reduce-next', `Reduce ${futureForecast[0].label}`)}
                           {seg('reduce-prorata', 'Reduce future pro-rata')}
                         </div>
                         <div className="spacer" />
-                        <button className="btn" disabled={saving} onClick={onClose}>Cancel</button>
-                        <button className="btn btn-primary" disabled={!choice || saving || missingEvidence} onClick={doClosePlan}>Save</button>
+                        <button className="btn btn-primary" disabled={!choice || saving || missingEvidence} onClick={doClosePlan}>Save rebalanced</button>
                       </div>
                     </>
-                  ) : (
-                    <div className="me-close-actions">
-                      <div className="me-status" style={{ flex: 1, marginBottom: 0 }}>No future forecast to rebalance against — true overspend.</div>
-                      <button className="btn" disabled={saving} onClick={onClose}>Cancel</button>
-                      <button className="btn btn-danger" onClick={() => setShowApproval(true)}>Request manager approval</button>
-                    </div>
                   )}
+                  <div className="me-status">
+                    {pendingApproval
+                      ? 'Saved — awaiting manager (admin) approval of the overspend.'
+                      : 'Option B — save over budget and request admin approval:'}
+                  </div>
+                  <div className="me-close-actions">
+                    {isAdmin && pendingApproval && (
+                      <button className="btn btn-primary" disabled={saving} onClick={() => setResolving(true)}>Resolve overspend</button>
+                    )}
+                    <div className="spacer" />
+                    <button className="btn" disabled={saving} onClick={onClose}>Cancel</button>
+                    <button className="btn btn-danger" disabled={saving || missingEvidence} onClick={saveOverBudget}>
+                      {pendingApproval ? 'Save changes' : 'Save & request approval'}
+                    </button>
+                  </div>
                 </>
               ) : !closing ? (
                 <>
@@ -302,14 +329,16 @@ export default function MonthEntriesModal({
           onConfirm={() => { removeRow(pendingDelete._key ?? pendingDelete.id); setPendingDelete(null) }}
         />
       )}
-      {showApproval && (
-        <ConfirmModal
-          open
-          title="Manager approval required"
-          message={`This is a true overspend of ${formatMoney(overBudget)} with no future forecast to rebalance against. Manager approval is required before it can be signed off.`}
-          confirmLabel="OK"
-          onCancel={() => setShowApproval(false)}
-          onConfirm={() => setShowApproval(false)}
+      {resolving && (
+        <OverspendApprovalPanel
+          line={line}
+          monthLabel={monthLabel}
+          overspend={overBudget}
+          lines={allLines || []}
+          entriesByLine={entriesByLine || {}}
+          closesByLine={closesByLine || {}}
+          onApprove={(method, note, reductions) => onApprove(line.id, monthKey, method, note, reductions)}
+          onClose={() => setResolving(false)}
         />
       )}
       {attachKey != null && (

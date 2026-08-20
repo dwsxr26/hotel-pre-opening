@@ -36,6 +36,11 @@ Two tabs:
 ### Overview — the monthly services/opex forecast
 - Per-line monthly forecast vs. invoices across Jan-2025 → Sep-2027, with
   month-close (cancel / roll-forward / rebalance) and an Excl/Incl-VAT toggle.
+- **Overspend approvals** — if an invoice pushes a line over budget and isn't
+  self-rebalanced, it still saves and the month goes **yellow** (pending). The
+  month can't be closed until an **admin** approves it — either by reallocating
+  budget from other lines (which updates those lines) or accepting the overspend
+  with a written reason. A flag on the Reforecast cell opens the full history.
 
 ### Payment run (bookkeeper export)
 - The Overview toolbar's **Payment run** button zips a summary CSV plus every
@@ -47,9 +52,9 @@ Two tabs:
 
 1. **Create a Supabase project** (https://supabase.com → New project).
 2. In the project's **SQL Editor**, run the migrations in
-   [`supabase/migrations/`](supabase/migrations/) **in order**, `0001…0016`.
+   [`supabase/migrations/`](supabase/migrations/) **in order**, `0001…0017`.
    They create every table with RLS, the file-attachment bucket, the invite
-   allowlist, the invoice table and the admin-only budget guard.
+   allowlist, the invoice table, the admin-only budget guard and the overspend-approval workflow.
 3. In **Authentication → Providers**, make sure **Email** is enabled (magic link
    and password). Wire the "Before User Created" hook from `0013` to gate signup
    to the allowlist.
@@ -96,7 +101,7 @@ There is no test suite — verify changes with `npm run lint` and by running the
 ## Project layout
 
 ```
-supabase/migrations/*               schema + RLS, numbered 0001…0016
+supabase/migrations/*               schema + RLS, numbered 0001…0017
 supabase/seed/*                     seed JSON for items + services
 scripts/*                           seed + evidence-export scripts
 src/lib/*                           pure logic (format, departments, serviceCalc, csv…)

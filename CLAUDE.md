@@ -62,7 +62,7 @@ stack, optimistic edits, realtime refresh).
 
 - **`src/data/*`** — the only place that talks to Supabase. One module per
   table/domain (`items`, `itemInvoices`, `categories`, `departments`, `profiles`,
-  `members`, `attachments`, `services`, `paymentRun`, `viewPrefs`). Each exports plain async CRUD
+  `members`, `attachments`, `services`, `serviceApprovals`, `paymentRun`, `viewPrefs`). Each exports plain async CRUD
   functions that `throw` on error; callers handle the error. See
   [src/data/items.js](src/data/items.js) for the canonical shape (a shared
   `COLUMNS` string, `fetch/update/add/updateMany/delete`, plus a realtime
@@ -96,12 +96,13 @@ stack, optimistic edits, realtime refresh).
 
 ### Data model (Supabase)
 
-Migrations live in `supabase/migrations/`, numbered `0001…0016`, applied in
+Migrations live in `supabase/migrations/`, numbered `0001…0017`, applied in
 order via the Supabase SQL editor. Key tables: `items`, `item_invoices`
 (one-per-line OS&E invoice, `unique (item_id)`), `categories`, `departments`, `view_prefs`, `profiles`,
 `allowed_members` (invite allowlist), `attachments`, `service_lines`,
 `service_entries`, `service_month_close`, `service_export_runs` (per-user
-payment-run log). RLS is on everywhere.
+payment-run log), `service_overspend_approvals` + `service_overspend_reductions`
+(over-budget approval workflow). RLS is on everywhere.
 Admin-only writes are enforced in SQL (client shows an alert on the resulting
 error — never trust the client for authz).
 
@@ -125,6 +126,17 @@ error — never trust the client for authz).
 - **Money**: forecast/budget stored **ex-VAT**; default VAT 22%. Prefer
   `Math.round` to cents to avoid floating-point `€0.00` showing as non-zero
   (see recent commits on this).
+- **Overspend approval** (migration 0017): when a services invoice pushes a
+  line's reforecast over its budget and isn't self-rebalanced (reduce the line's
+  own future forecast), the invoice still saves and a **pending** approval is
+  recorded per `(line, month)`. That month's grid cell turns **yellow** and a DB
+  trigger blocks closing it until an **admin** approves via `approve_overspend()`
+  (a SECURITY DEFINER RPC): either **reallocated** (cut budget from other lines,
+  the total is added onto the over-budget line — atomic) or **accepted** (a
+  written reason). History (who/why/when + reductions) opens from a flag on the
+  line's Reforecast cell. Approvals load with graceful degradation like the rest
+  of services. See [OverspendApprovalPanel](src/components/services/OverspendApprovalPanel.jsx)
+  and [serviceApprovals.js](src/data/serviceApprovals.js).
 - **Payment run**: both service invoices and OS&E order invoices carry a
   `pay_status` (`to_be_paid` / `paid_by_card` / `paid_by_bank`; only `to_be_paid`
   is exported, so ticking an invoice paid drops it from the next run). The

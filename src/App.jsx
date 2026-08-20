@@ -26,6 +26,7 @@ import {
   addServiceEntry, updateServiceEntry, deleteServiceEntry, uploadServiceFile, serviceSignedUrl,
   setMonthClose, clearMonthClose, updateServiceLine, deleteAutoEntries,
 } from './data/services'
+import { fetchServiceApprovals, requestOverspend, approveOverspend } from './data/serviceApprovals'
 import { SERVICE_MONTHS } from './lib/serviceCalc'
 
 const DEFAULT_VIEW = {
@@ -54,6 +55,7 @@ export default function App() {
   const [serviceLines, setServiceLines] = useState([])
   const [serviceEntries, setServiceEntries] = useState({})
   const [serviceCloses, setServiceCloses] = useState({})
+  const [serviceApprovals, setServiceApprovals] = useState([])
   const [profiles, setProfiles] = useState([])
   const [myProfile, setMyProfile] = useState(null)
   const [showProfile, setShowProfile] = useState(false)
@@ -113,12 +115,17 @@ export default function App() {
   useEffect(() => {
     if (!user) return
     let active = true
-    Promise.all([fetchServiceLines(), fetchServiceEntries(), fetchServiceCloses()])
-      .then(([ls, es, cs]) => {
+    Promise.all([
+      fetchServiceLines(), fetchServiceEntries(), fetchServiceCloses(),
+      // Overspend approvals only exist once migration 0017 has been run.
+      fetchServiceApprovals().catch(() => []),
+    ])
+      .then(([ls, es, cs, aps]) => {
         if (!active) return
         setServiceLines(ls)
         setServiceEntries(es)
         setServiceCloses(cs)
+        setServiceApprovals(aps)
       })
       .catch((err) => console.error('Services load failed (run migration 0007_services.sql?)', err))
     return () => {
@@ -134,6 +141,14 @@ export default function App() {
   )
   const refreshServiceCloses = useCallback(
     () => fetchServiceCloses().then(setServiceCloses).catch((e) => console.error('Closes reload failed', e)),
+    [],
+  )
+  const refreshServiceLines = useCallback(
+    () => fetchServiceLines().then(setServiceLines).catch((e) => console.error('Lines reload failed', e)),
+    [],
+  )
+  const refreshServiceApprovals = useCallback(
+    () => fetchServiceApprovals().then(setServiceApprovals).catch((e) => console.error('Approvals reload failed', e)),
     [],
   )
   const onServiceLineUpdate = useCallback(
@@ -164,7 +179,7 @@ export default function App() {
   // (files uploaded here, on commit — so a cancelled modal leaves no orphans),
   // plus an optional month-close plan. ops = { adds, updates, deletes }.
   const onServiceCommit = useCallback(
-    async (lineId, month, ops, closePlan) => {
+    async (lineId, month, ops, closePlan, overspend = null) => {
       const label = SERVICE_MONTHS.find((m) => m.key === month)?.label || month
       try {
         for (const a of ops.adds || []) {
@@ -208,13 +223,33 @@ export default function App() {
           }
           await setMonthClose(lineId, month, closePlan.disposition || 'closed')
         }
-        await Promise.all([refreshServiceEntries(), refreshServiceCloses()])
+        // Over-budget save: record (or re-open) a pending overspend approval for
+        // this line/month. The invoice above is already saved either way.
+        if (overspend && Number(overspend.amount) > 0.5) {
+          await requestOverspend({ line_id: lineId, month, overspend_amount: overspend.amount })
+        }
+        await Promise.all([refreshServiceEntries(), refreshServiceCloses(), refreshServiceApprovals()])
       } catch (e) {
         console.error('Commit failed', e)
         alert('Could not save your changes. Please try again.')
       }
     },
-    [refreshServiceEntries, refreshServiceCloses],
+    [refreshServiceEntries, refreshServiceCloses, refreshServiceApprovals],
+  )
+
+  // Admin approves an overspend: 'reallocated' (with reductions) or 'accepted'
+  // (with a written reason). The DB function applies the budget reallocation.
+  const onApproveOverspend = useCallback(
+    async (lineId, month, method, note, reductions) => {
+      try {
+        await approveOverspend(lineId, month, method, note, reductions)
+        await Promise.all([refreshServiceApprovals(), refreshServiceLines()])
+      } catch (e) {
+        console.error('Approve overspend failed', e)
+        alert('Could not approve this overspend. Admins only — or try again.')
+      }
+    },
+    [refreshServiceApprovals, refreshServiceLines],
   )
 
   const onServiceMonthReopen = useCallback(
@@ -241,6 +276,12 @@ export default function App() {
   const suppliers = useMemo(
     () => [...new Set(items.map((i) => i.supplier).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
     [items],
+  )
+
+  // user_id -> display name, for showing who requested/approved an overspend.
+  const nameById = useMemo(
+    () => Object.fromEntries(profiles.map((p) => [p.user_id, displayName(p)])),
+    [profiles],
   )
 
   // Items after the Orders filter/search — used to keep the Metrics panel in sync.
@@ -563,14 +604,17 @@ export default function App() {
           lines={serviceLines}
           entriesByLine={serviceEntries}
           closesByLine={serviceCloses}
+          approvals={serviceApprovals}
           items={items}
           invoicesByItem={itemInvoices}
           isAdmin={!!myProfile?.is_admin}
           people={people}
+          nameById={nameById}
           onLineUpdate={onServiceLineUpdate}
           onCommit={onServiceCommit}
           onDownload={onServiceDownload}
           onReopen={onServiceMonthReopen}
+          onApproveOverspend={onApproveOverspend}
         />
       )}
 

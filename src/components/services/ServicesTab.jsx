@@ -8,6 +8,7 @@ import ServicesMetrics from './ServicesMetrics'
 import ServicesTable from './ServicesTable'
 import MonthEntriesModal from './MonthEntriesModal'
 import PaymentRunModal from './PaymentRunModal'
+import OverspendHistoryModal from './OverspendHistoryModal'
 
 const DEFAULT_SERVICES_VIEW = {
   svcWidths: {}, svcOrder: [], inclVat: false, metricsOpen: false, zoom: 1,
@@ -16,12 +17,26 @@ const DEFAULT_SERVICES_VIEW = {
 const monthLabel = (key) => SERVICE_MONTHS.find((m) => m.key === key)?.label || key
 
 export default function ServicesTab({
-  lines, entriesByLine, closesByLine, items, invoicesByItem, isAdmin, people, onLineUpdate,
-  onCommit, onDownload, onReopen,
+  lines, entriesByLine, closesByLine, approvals = [], items, invoicesByItem, isAdmin, people, nameById = {},
+  onLineUpdate, onCommit, onDownload, onReopen, onApproveOverspend,
 }) {
   const { prefs: view, update: setView } = useViewPrefs(true, DEFAULT_SERVICES_VIEW, 'services')
   const [open, setOpen] = useState(null) // { lineId, month }
   const [showPaymentRun, setShowPaymentRun] = useState(false)
+  const [historyLine, setHistoryLine] = useState(null) // line whose overspend history is open
+
+  // Overspend approvals keyed by line, plus a line-id -> name lookup for history.
+  const approvalsByLine = useMemo(() => {
+    const map = {}
+    for (const a of approvals) (map[a.line_id] ||= []).push(a)
+    return map
+  }, [approvals])
+  const approvalByLineMonth = useMemo(() => {
+    const map = {}
+    for (const a of approvals) (map[a.line_id] ||= {})[a.month] = a
+    return map
+  }, [approvals])
+  const lineNameById = useMemo(() => Object.fromEntries(lines.map((l) => [l.id, l.name])), [lines])
   const incl = view.inclVat === true
   const zoom = view.zoom || 1
   const setZoom = (z) => setView({ zoom: Math.min(1.5, Math.max(0.6, Math.round(z * 10) / 10)) })
@@ -176,9 +191,11 @@ export default function ServicesTab({
         setView={setView}
         isAdmin={isAdmin}
         people={people}
+        approvalsByLine={approvalsByLine}
         onLineUpdate={onLineUpdate}
         zoom={zoom}
         onOpenMonth={(line, month) => setOpen({ lineId: line.id, month })}
+        onOpenHistory={(line) => setHistoryLine(line)}
       />
 
       {openLine && (
@@ -191,10 +208,26 @@ export default function ServicesTab({
           lineEntries={entriesByLine[open.lineId] || []}
           closesForLine={closesByLine[open.lineId] || {}}
           disposition={closesByLine[open.lineId]?.[open.month]}
-          onCommit={(ops, closePlan) => onCommit(open.lineId, open.month, ops, closePlan)}
+          approval={approvalByLineMonth[open.lineId]?.[open.month] || null}
+          isAdmin={isAdmin}
+          allLines={lines}
+          entriesByLine={entriesByLine}
+          closesByLine={closesByLine}
+          onApprove={onApproveOverspend}
+          onCommit={(ops, closePlan, overspend) => onCommit(open.lineId, open.month, ops, closePlan, overspend)}
           onDownload={onDownload}
           onReopen={() => onReopen(open.lineId, open.month)}
           onClose={() => setOpen(null)}
+        />
+      )}
+
+      {historyLine && (
+        <OverspendHistoryModal
+          line={historyLine}
+          approvals={approvalsByLine[historyLine.id] || []}
+          lineNameById={lineNameById}
+          nameById={nameById}
+          onClose={() => setHistoryLine(null)}
         />
       )}
 

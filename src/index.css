@@ -446,3 +446,35 @@ span.me-pay { border: 0; background: none; }
 .team-admin { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
 
 .center-note { text-align: center; color: var(--muted-fg); font-size: 14px; padding: 48px; }
+
+/* --- Overspend approval + history (migration 0017) ----------------------- */
+.me-approved { background: hsl(140 55% 95%); border: 1px solid hsl(140 45% 80%); color: hsl(140 45% 28%); padding: 8px 10px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; }
+
+.ovp-modal { max-width: 640px; position: relative; }
+.ovp-seg { margin: 12px 0; }
+.ovp-rows { display: flex; flex-direction: column; gap: 12px; }
+.ovp-row { border: 1px solid var(--border); border-radius: 8px; padding: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ovp-line { flex: 1; min-width: 220px; height: 32px; border: 1px solid var(--border); border-radius: 6px; padding: 0 8px; font: inherit; font-size: 13px; background: #fff; }
+.ovp-amt { width: 120px; height: 32px; border: 1px solid var(--border); border-radius: 6px; padding: 0 8px; font: inherit; font-size: 13px; text-align: right; }
+.ovp-figs { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted-fg); padding-top: 2px; }
+.ovp-figs b { color: var(--fg); font-weight: 600; }
+.ovp-figs.ovp-bad b { color: hsl(0 60% 45%); }
+.ovp-warn { color: hsl(0 60% 45%); }
+.ovp-tally { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; margin: 12px 0 8px; }
+.ovp-note { width: 100%; min-height: 60px; border: 1px solid var(--border); border-radius: 8px; padding: 8px; font: inherit; font-size: 13px; resize: vertical; margin-bottom: 10px; }
+.ovp-notify-list { margin: 8px 0 12px; padding-left: 18px; font-size: 13px; }
+.ovp-notify-list li { margin: 4px 0; }
+
+.ovh-modal { max-width: 560px; position: relative; }
+.ovh-list { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; max-height: 52vh; overflow-y: auto; }
+.ovh-item { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.ovh-item.ovh-pending { border-color: hsl(45 80% 60%); background: hsl(48 96% 97%); }
+.ovh-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.ovh-month { font-weight: 600; font-size: 14px; }
+.ovh-amt { margin-left: auto; font-size: 13px; color: var(--muted-fg); }
+.ovh-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.ovh-badge.pending { background: hsl(45 90% 88%); color: hsl(38 70% 32%); }
+.ovh-badge.approved { background: hsl(140 55% 90%); color: hsl(140 45% 28%); }
+.ovh-body { font-size: 13px; color: var(--muted-fg); }
+.ovh-reductions { margin: 6px 0 0; padding-left: 18px; }
+.ovh-note { margin-top: 6px; font-style: italic; color: var(--fg); }

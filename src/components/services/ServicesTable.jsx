@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowDown, ArrowUp, ChevronsUpDown, GripVertical } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronsUpDown, Flag, GripVertical } from 'lucide-react'
 import { formatMoney } from '../../lib/format'
 import { SERVICE_MONTHS, isPastMonth } from '../../lib/serviceCalc'
 
@@ -58,7 +58,7 @@ function BudgetCell({ valueEx, display, onCommit }) {
   )
 }
 
-export default function ServicesTable({ rows, totals, sort, onSortToggle, view, setView, onOpenMonth, isAdmin, people, onLineUpdate, zoom = 1 }) {
+export default function ServicesTable({ rows, totals, sort, onSortToggle, view, setView, onOpenMonth, isAdmin, people, onLineUpdate, approvalsByLine = {}, onOpenHistory, zoom = 1 }) {
   const [drag, setDrag] = useState(null) // live resize { id, w }
   const [dragCol, setDragCol] = useState(null)
   const scrollRef = useRef(null)
@@ -211,17 +211,32 @@ export default function ServicesTable({ rows, totals, sort, onSortToggle, view, 
           <tbody>
             {rows.map(({ line, c }) => {
               const over = c.reforecast > c.budget + 0.5
+              const lineApprovals = approvalsByLine[line.id] || []
+              const pendingMonths = new Set(lineApprovals.filter((a) => a.status === 'pending').map((a) => a.month))
+              const hasHistory = lineApprovals.length > 0
+              const hasPending = pendingMonths.size > 0
               return (
                 <tr key={line.id}>
                   {infoCols.map((ic) => {
                     const last = ic.id === infoOrder[infoOrder.length - 1]
+                    const isReforecast = ic.id === 'reforecast'
                     return (
                       <td
                         key={ic.id}
-                        className={`pinned ${last ? 'pinned-shadow' : ''} ${ic.num ? 'cell-num' : ''} ${ic.id === 'reforecast' && over ? 'svc-over' : ''}`}
-                        style={{ left: lefts[ic.id], width: ic.w, minWidth: ic.w, maxWidth: ic.w, zIndex: 6 }}
+                        className={`pinned ${last ? 'pinned-shadow' : ''} ${ic.num ? 'cell-num' : ''} ${isReforecast && over ? 'svc-over' : ''}`}
+                        style={{ left: lefts[ic.id], width: ic.w, minWidth: ic.w, maxWidth: ic.w, zIndex: 6, ...(isReforecast && hasHistory ? { position: 'relative' } : {}) }}
                       >
                         {infoCell(ic.id, line, c)}
+                        {isReforecast && hasHistory && (
+                          <button
+                            className="svc-flag"
+                            title={hasPending ? 'Overspend awaiting approval — click for history' : 'Overspend history'}
+                            style={{ position: 'absolute', top: 2, right: 3, border: 0, background: 'transparent', padding: 0, lineHeight: 0, cursor: 'pointer', color: hasPending ? '#b45309' : '#9ca3af' }}
+                            onClick={(e) => { e.stopPropagation(); onOpenHistory?.(line) }}
+                          >
+                            <Flag size={11} fill="currentColor" />
+                          </button>
+                        )}
                       </td>
                     )
                   })}
@@ -230,11 +245,14 @@ export default function ServicesTable({ rows, totals, sort, onSortToggle, view, 
                     // Light-blue fill showing how much of the forecast is invoiced.
                     const pct = mv.forecast > 0 ? Math.max(0, Math.min(1, mv.invoiced / mv.forecast)) : (mv.invoiced > 0 ? 1 : 0)
                     const bg = pct > 0 ? `linear-gradient(90deg, hsl(205 85% 87%) ${pct * 100}%, transparent ${pct * 100}%)` : undefined
+                    // Yellow = an over-budget invoice is saved here but not yet approved.
+                    const overspendPending = pendingMonths.has(m.key)
                     return (
                       <td
                         key={m.key}
-                        className={`cell-num svc-month ${isPastMonth(m.key) ? 'svc-past' : ''} ${mv.closed ? 'svc-closed' : ''}`}
-                        style={bg ? { background: bg } : undefined}
+                        className={`cell-num svc-month ${isPastMonth(m.key) ? 'svc-past' : ''} ${mv.closed ? 'svc-closed' : ''} ${overspendPending ? 'svc-overspend-pending' : ''}`}
+                        style={overspendPending ? { background: 'hsl(48 96% 76%)' } : (bg ? { background: bg } : undefined)}
+                        title={overspendPending ? 'Over budget — awaiting manager approval' : undefined}
                       >
                         <button className="svc-cell-btn" onClick={() => onOpenMonth(line, m.key)}>
                           {mv.effective ? formatMoney(mv.effective) : '-'}
