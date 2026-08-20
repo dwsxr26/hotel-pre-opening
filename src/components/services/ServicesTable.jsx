@@ -224,7 +224,7 @@ export default function ServicesTable({ rows, totals, sort, onSortToggle, view, 
                       <td
                         key={ic.id}
                         className={`pinned ${last ? 'pinned-shadow' : ''} ${ic.num ? 'cell-num' : ''} ${isReforecast && over ? 'svc-over' : ''}`}
-                        style={{ left: lefts[ic.id], width: ic.w, minWidth: ic.w, maxWidth: ic.w, zIndex: 6, ...(isReforecast && hasHistory ? { position: 'relative' } : {}) }}
+                        style={{ left: lefts[ic.id], width: ic.w, minWidth: ic.w, maxWidth: ic.w, zIndex: 6 }}
                       >
                         {infoCell(ic.id, line, c)}
                         {isReforecast && hasHistory && (
