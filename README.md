@@ -52,7 +52,7 @@ Two tabs:
 
 1. **Create a Supabase project** (https://supabase.com → New project).
 2. In the project's **SQL Editor**, run the migrations in
-   [`supabase/migrations/`](supabase/migrations/) **in order**, `0001…0018`.
+   [`supabase/migrations/`](supabase/migrations/) **in order**, `0001…0019`.
    They create every table with RLS, the file-attachment bucket, the invite
    allowlist, the invoice table, the admin-only budget guard and the overspend-approval workflow.
 3. In **Authentication → Providers**, make sure **Email** is enabled (magic link
@@ -101,7 +101,7 @@ There is no test suite — verify changes with `npm run lint` and by running the
 ## Project layout
 
 ```
-supabase/migrations/*               schema + RLS, numbered 0001…0018
+supabase/migrations/*               schema + RLS, numbered 0001…0019
 supabase/seed/*                     seed JSON for items + services
 scripts/*                           seed + evidence-export scripts
 src/lib/*                           pure logic (format, departments, serviceCalc, csv…)

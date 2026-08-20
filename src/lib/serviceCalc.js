@@ -56,6 +56,42 @@ export function computeLine(line, entries = [], closes, incl = false) {
   return { budget, spent, reforecast, remaining: reforecast - spent, monthly }
 }
 
+// How much forecast a line can shed to free budget: per future, still-open month,
+// the forecast not yet consumed by an invoice (forecast − invoiced). Used by the
+// overspend "reduce budget elsewhere" flow, which cuts a donor line's budget AND
+// its forecast pro-rata (you can't reduce what's already spent). Returns
+// { total, months: [{ month, reducible }] } in ex-VAT terms.
+export function reducibleForecast(line, entries = [], closes) {
+  const byMonth = {}
+  for (const e of entries) {
+    const b = (byMonth[e.month] ||= { forecast: 0, invoiced: 0 })
+    const amt = Number(e.amount_ex_vat) || 0
+    if (e.type === 'invoice') b.invoiced += amt
+    else b.forecast += amt
+  }
+  const months = []
+  let total = 0
+  for (const { key } of SERVICE_MONTHS) {
+    if (isPastMonth(key) || closes?.[key]) continue
+    const b = byMonth[key] || { forecast: 0, invoiced: 0 }
+    const r = b.forecast - b.invoiced
+    if (r > 0.5) {
+      months.push({ month: key, reducible: r })
+      total += r
+    }
+  }
+  return { total, months }
+}
+
+// Split a reduction of `amount` pro-rata across a reducibleForecast() result,
+// as negative forecast adjustments [{ month, amount }] (rounded to whole euros).
+export function proRataForecastCut(amount, reducible) {
+  if (!reducible || reducible.total <= 0) return []
+  return reducible.months
+    .map((m) => ({ month: m.month, amount: -Math.round(amount * (m.reducible / reducible.total)) }))
+    .filter((a) => a.amount !== 0)
+}
+
 // Aggregate several lines' figures (for the summary tables).
 export function aggregate(lines, entriesByLine, closesByLine, incl) {
   const acc = { budget: 0, spent: 0, reforecast: 0, remaining: 0 }

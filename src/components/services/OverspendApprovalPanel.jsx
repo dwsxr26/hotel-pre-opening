@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Plus, Trash2, X } from 'lucide-react'
 import { formatMoney } from '../../lib/format'
-import { computeLine } from '../../lib/serviceCalc'
+import { computeLine, reducibleForecast, proRataForecastCut } from '../../lib/serviceCalc'
 
 // Admin panel to approve an over-budget (overspend) invoice. Two routes:
 //   1. 'reallocated' — cut budget from other lines; the total is reallocated onto
-//      the over-budget line. Each target shows budget/spent/reforecast/remaining,
-//      updating live; cutting a line below its own reforecast is blocked.
+//      the over-budget line. Because budgets are spread across the forecast,
+//      reducing a donor line cuts BOTH its budget and its forecast (pro-rata over
+//      its future open months) — you can free at most what that line still has
+//      forecast for. Each target shows budget/reforecast updating live.
 //   2. 'accepted' — a true overspend, with a written reason.
 const newKey = () => `r-${crypto.randomUUID()}`
 
@@ -19,10 +21,17 @@ export default function OverspendApprovalPanel({
   const [saving, setSaving] = useState(false)
   const [notify, setNotify] = useState(null) // post-save reminder list
 
-  // Figures for a candidate line (ex VAT), for the live budget/spent/etc. display.
+  // Figures for a candidate line (ex VAT), for the live budget/reforecast display.
   const figures = useMemo(() => {
     const map = {}
     for (const l of lines) map[l.id] = computeLine(l, entriesByLine[l.id], closesByLine[l.id], false)
+    return map
+  }, [lines, entriesByLine, closesByLine])
+
+  // How much forecast each line can free (its reducible future forecast).
+  const reducibleByLine = useMemo(() => {
+    const map = {}
+    for (const l of lines) map[l.id] = reducibleForecast(l, entriesByLine[l.id], closesByLine[l.id])
     return map
   }, [lines, entriesByLine, closesByLine])
 
@@ -35,17 +44,28 @@ export default function OverspendApprovalPanel({
   const addRow = () => setRows((rs) => [...rs, { key: newKey(), line_id: '', amount: '' }])
   const removeRow = (key) => setRows((rs) => (rs.length > 1 ? rs.filter((r) => r.key !== key) : rs))
 
+  // Most a line can free: its reducible forecast, but never below what it has
+  // already spent (you can't take back invoiced money).
+  const capFor = (lineId) => {
+    const f = figures[lineId]
+    const red = reducibleByLine[lineId]
+    if (!f || !red) return 0
+    return Math.max(0, Math.min(red.total, Number(f.budget) - Number(f.spent)))
+  }
+
   const valid = rows
     .filter((r) => r.line_id && Number(r.amount) > 0)
-    .map((r) => ({ line_id: r.line_id, amount: Math.round(Number(r.amount)) }))
+    .map((r) => {
+      const amount = Math.round(Number(r.amount))
+      return { line_id: r.line_id, amount, adjustments: proRataForecastCut(amount, reducibleByLine[r.line_id]) }
+    })
   const total = valid.reduce((s, r) => s + r.amount, 0)
   const remaining = Math.max(0, Math.round(overspend) - total)
 
-  // A cut that pushes a target line below its own reforecast is not allowed.
+  // You can only free what a line still has as forecast (you can't cut spend).
   const overcut = rows.some((r) => {
     if (!r.line_id || !(Number(r.amount) > 0)) return false
-    const f = figures[r.line_id]
-    return f && (Number(f.budget) - Number(r.amount)) < f.reforecast - 0.5
+    return Number(r.amount) > capFor(r.line_id) + 0.5
   })
 
   const canReallocate = total > 0 && !overcut
@@ -76,8 +96,10 @@ export default function OverspendApprovalPanel({
   const renderRow = (r) => {
     const f = r.line_id ? figures[r.line_id] : null
     const amt = Number(r.amount) || 0
+    const cap = r.line_id ? capFor(r.line_id) : 0
     const newBudget = f ? Number(f.budget) - amt : 0
-    const bad = f && newBudget < f.reforecast - 0.5
+    const newReforecast = f ? Math.max(f.spent, Number(f.reforecast) - amt) : 0
+    const bad = amt > cap + 0.5
     return (
       <div className="ovp-row" key={r.key}>
         <select
@@ -97,10 +119,10 @@ export default function OverspendApprovalPanel({
         {f && (
           <div className={`ovp-figs ${bad ? 'ovp-bad' : ''}`}>
             <span>Budget <b>{formatMoney(f.budget)}{amt ? ` → ${formatMoney(newBudget)}` : ''}</b></span>
+            <span>Forecast <b>{formatMoney(f.reforecast)}{amt ? ` → ${formatMoney(newReforecast)}` : ''}</b></span>
             <span>Spent <b>{formatMoney(f.spent)}</b></span>
-            <span>Reforecast <b>{formatMoney(f.reforecast)}</b></span>
-            <span>Remaining <b>{formatMoney(f.remaining)}</b></span>
-            {bad && <span className="ovp-warn">Cut exceeds this line's own headroom — it would go over budget.</span>}
+            <span className={bad ? 'ovp-warn' : ''}>Can free up to <b>{formatMoney(cap)}</b></span>
+            {bad && <span className="ovp-warn">Only {formatMoney(cap)} of forecast can be freed on this line.</span>}
           </div>
         )}
       </div>

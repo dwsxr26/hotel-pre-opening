@@ -96,7 +96,7 @@ stack, optimistic edits, realtime refresh).
 
 ### Data model (Supabase)
 
-Migrations live in `supabase/migrations/`, numbered `0001…0018`, applied in
+Migrations live in `supabase/migrations/`, numbered `0001…0019`, applied in
 order via the Supabase SQL editor. Key tables: `items`, `item_invoices`
 (one-per-line OS&E invoice, `unique (item_id)`), `categories`, `departments`, `view_prefs`, `profiles`,
 `allowed_members` (invite allowlist), `attachments`, `service_lines`,
