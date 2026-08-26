@@ -132,7 +132,7 @@ export default function ServicesTable({ rows, totals, sort, onSortToggle, view, 
     }
     if (id === 'department') return <span className="cell-pad">{line.department}</span>
     if (id === 'owner') {
-      if (!isAdmin) return <span className="cell-pad">{line.owner || '—'}</span>
+      // Owner is not admin-only: anyone on the team can (re)assign a line.
       const opts = line.owner && !people.includes(line.owner) ? [line.owner, ...people] : people
       return (
         <select className="cell-input" value={line.owner || ''} onChange={(e) => onLineUpdate(line.id, { owner: e.target.value })}>
