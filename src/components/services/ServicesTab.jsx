@@ -65,36 +65,58 @@ export default function ServicesTab({
     owner: [...new Set(visibleLines.map((l) => l.owner || ''))].sort((a, b) => a.localeCompare(b)),
   }), [visibleLines])
 
-  const rows = useMemo(() => {
-    let out = rowsAll.filter((r) => {
+  const filtered = useMemo(
+    () => rowsAll.filter((r) => {
       if (filters.line?.length && !filters.line.includes(r.line.name)) return false
       if (filters.department?.length && !filters.department.includes(r.line.department)) return false
       if (filters.owner?.length && !filters.owner.includes(r.line.owner || '')) return false
       return true
-    })
-    if (sort.key) {
-      const val = (r) => {
-        const k = sort.key
-        if (k === 'line') return r.line.name.toLowerCase()
-        if (k === 'department') return r.line.department.toLowerCase()
-        if (k === 'owner') return (r.line.owner || '').toLowerCase()
-        if (k === 'budget') return r.c.budget
-        if (k === 'spent') return r.c.spent
-        if (k === 'reforecast') return r.c.reforecast
-        if (k === 'remaining') return r.c.remaining
-        if (k.startsWith('m:')) return r.c.monthly[k.slice(2)]?.effective || 0
-        return 0
-      }
-      out = [...out].sort((a, b) => {
-        const av = val(a)
-        const bv = val(b)
-        if (av < bv) return sort.dir === 'asc' ? -1 : 1
-        if (av > bv) return sort.dir === 'asc' ? 1 : -1
-        return 0
-      })
+    }),
+    [rowsAll, filters],
+  )
+
+  // A sort is a snapshot, not a live re-order. Clicking a header orders the rows
+  // once; editing a figure afterwards (adding an invoice moves a month total and
+  // the reforecast) must NOT make that line jump out from under you. So the order
+  // is pinned below and only recomputed when this signature changes — the sort,
+  // the filters or the set of visible lines, deliberately never the figures.
+  const sortSig = useMemo(
+    () => (sort.key ? JSON.stringify([sort.key, sort.dir, filtered.map((r) => r.line.id)]) : ''),
+    [sort, filtered],
+  )
+  const [pinned, setPinned] = useState({ sig: '', ids: [] })
+
+  const rows = useMemo(() => {
+    if (!sortSig) return filtered // default: the lines' own budget order (sort_index)
+    if (pinned.sig === sortSig) {
+      const pos = new Map(pinned.ids.map((id, i) => [id, i]))
+      return [...filtered].sort((a, b) => (pos.get(a.line.id) ?? 0) - (pos.get(b.line.id) ?? 0))
     }
-    return out
-  }, [rowsAll, filters, sort])
+    const val = (r) => {
+      const k = sort.key
+      if (k === 'line') return r.line.name.toLowerCase()
+      if (k === 'department') return r.line.department.toLowerCase()
+      if (k === 'owner') return (r.line.owner || '').toLowerCase()
+      if (k === 'budget') return r.c.budget
+      if (k === 'spent') return r.c.spent
+      if (k === 'reforecast') return r.c.reforecast
+      if (k === 'remaining') return r.c.remaining
+      if (k.startsWith('m:')) return r.c.monthly[k.slice(2)]?.effective || 0
+      return 0
+    }
+    return [...filtered].sort((a, b) => {
+      const av = val(a)
+      const bv = val(b)
+      if (av < bv) return sort.dir === 'asc' ? -1 : 1
+      if (av > bv) return sort.dir === 'asc' ? 1 : -1
+      // Ties keep the budget order instead of shuffling from render to render.
+      return (a.line.sort_index ?? 0) - (b.line.sort_index ?? 0)
+    })
+  }, [filtered, sort, sortSig, pinned])
+
+  // Pin the order the sort just produced (React's "adjust state during render"
+  // pattern: it re-renders immediately, before anything is painted).
+  if (pinned.sig !== sortSig) setPinned({ sig: sortSig, ids: sortSig ? rows.map((r) => r.line.id) : [] })
 
   const totals = useMemo(() => {
     const t = { budget: 0, spent: 0, reforecast: 0, remaining: 0, months: {} }
@@ -109,10 +131,13 @@ export default function ServicesTab({
     return t
   }, [rows])
 
+  // asc -> desc -> off, so a third click always gets you back to the default
+  // budget order (a sort now sticks until you clear it).
   const onSortToggle = (key) =>
     setView((p) => {
       const cur = p.svcSort || { key: '', dir: 'asc' }
-      return { svcSort: cur.key === key ? { key, dir: cur.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' } }
+      if (cur.key !== key) return { svcSort: { key, dir: 'asc' } }
+      return { svcSort: cur.dir === 'asc' ? { key, dir: 'desc' } : { key: '', dir: 'asc' } }
     })
 
   const setFilter = (col, vals) => setView((p) => ({ svcFilters: { ...(p.svcFilters || {}), [col]: vals } }))
